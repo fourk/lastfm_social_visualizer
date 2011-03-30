@@ -65,7 +65,6 @@ class Track(LFMContent):
     album = models.ForeignKey(Album, related_name='tracks', null=True, blank=True)
     similar = models.ManyToManyField("self", through="SimilarTrack", symmetrical=False)
     lfmid = models.CharField(max_length=25, null=True,blank=True)
-    duration = models.IntegerField(max_length=10, null=True, blank=True)
     image = models.ForeignKey(Image, related_name='tracks', null=True, blank=True)
     duration = models.PositiveIntegerField(max_length=10, default=0)
     

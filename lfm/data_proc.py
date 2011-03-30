@@ -26,7 +26,7 @@ def get_for_user(username, week=False):
         process_page(user, response, week=week)
         
         for page in range(2, int(response['tracks']['@attr'].get('totalPages'))+1):
-            job_data = {'uname':username, 'page':page}
+            job_data = {'uname':username, 'page':page, 'week':week}
             CLIENT.call('lfm.process_track_page', json.dumps(job_data))
         
     except Exception, e:
@@ -57,6 +57,9 @@ def process_page(user, resp, week=False):
     
         user.track_pages_loaded = user.track_pages_loaded[:pagecomplete-1]+'1'+user.track_pages_loaded[pagecomplete:]
         user.save()
+def get_track_info_url(track, artist):
+    '''track and artist are strings'''
+    return 'http://ws.audioscrobbler.com/2.0/?method=track.getinfo&api_key=%s&track=%s&artist=%s&format=json'%(API, track, artist)
     
 def get_week_url(username, page=1):
     return 'http://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&period=7day&api_key=%s&user=%s&format=json&page=%s'%(API, username, page)
@@ -275,16 +278,18 @@ def get_or_create_artist(artist_name):
                      u'url': u'http://www.last.fm/music/Girl+Talk'}}'''
                      
 def do_call(url):
+    print '%s'%url
     return json.loads(urllib2.urlopen(url).read())
     
 def get_friends_data(user):
     '''user is a UserProfile object'''
     print 'Getting friend data for %s'%user
     for friend in user.friends.all():
-        get_for_user(friend, week=True)
+        get_for_user(friend.lfm_username, week=True)
     
     
 def process_friend_page(user, resp):
+    print 'processing friend page for %s'%user
     '''user is a UserProfile object
     resp is of this format:
     {u'friends': {u'@attr': {u'for': u'havok07',
@@ -326,19 +331,96 @@ def process_friend_page(user, resp):
             friend.image = image
             friend.save()
             
-            get_for_user(friend)
+            get_for_user(friend.lfm_username)
         user.friends.add(friend)
         
     if resp.get('friends').get('@attr').get('totalPages') == resp.get('friends').get('@attr').get('page'):
         get_friends_data(user)
     
-def get_friends(user):
+def get_friends_page(user, page=1):
+    print 'getting friends page for %s'%user
     '''user is a UserProfile object'''
-    url = get_friends_url(user.lfm_username)
+    url = get_friends_url(user.lfm_username, page=page)
     resp = do_call(url)
-    totalPages = int(resp.get('friends').get('@attr').get('totalPages'))
-    for page in range(2,totalPages+1):
-        job_data = {'uname':user.lfm_username, 'page':page}
-        CLIENT.call('lfm.process_friends_page', json.dumps(job_data))
+    total_pages = int(resp.get('friends').get('@attr').get('totalPages'))
+    if page == 1:
+        for page in range(2,total_pages+1):
+            job_data = {'uname':user.lfm_username, 'page':page}
+            CLIENT.call('lfm.process_friends_page', json.dumps(job_data))
     process_friend_page(user, resp)
-
+    
+def proc_track_info(resp):
+    '''{u'track': {u'album': {u'@attr': {u'position': u'10'},
+                           u'artist': u'deadmau5',
+                           u'image': [{u'#text': u'http://userserve-ak.last.fm/serve/64s/39945013.jpg',
+                                       u'size': u'small'},
+                                      {u'#text': u'http://userserve-ak.last.fm/serve/126/39945013.jpg',
+                                       u'size': u'medium'},
+                                      {u'#text': u'http://userserve-ak.last.fm/serve/174s/39945013.jpg',
+                                       u'size': u'large'},
+                                      {u'#text': u'http://userserve-ak.last.fm/serve/300x300/39945013.jpg',
+                                       u'size': u'extralarge'}],
+                           u'mbid': u'4b1b7059-a511-4257-8fae-380eb36d36cd',
+                           u'title': u'For Lack Of A Better Name',
+                           u'url': u'http://www.last.fm/music/deadmau5/For+Lack+Of+A+Better+Name'},
+                u'artist': {u'mbid': u'',
+                            u'name': u'deadmau5',
+                            u'url': u'http://www.last.fm/music/deadmau5'},
+                u'duration': u'307000',
+                u'id': u'332264316',
+                u'listeners': u'68667',
+                u'mbid': u'',
+                u'name': u'Strobe',
+                u'playcount': u'458109',
+                u'streamable': {u'#text': u'0', u'fulltrack': u'0'},
+                u'toptags': {u'tag': [{u'name': u'progressive house',
+                                       u'url': u'http://www.last.fm/tag/progressive%20house'},
+                                      {u'name': u'house',
+                                       u'url': u'http://www.last.fm/tag/house'},
+                                      {u'name': u'electronic',
+                                       u'url': u'http://www.last.fm/tag/electronic'},
+                                      {u'name': u'epic',
+                                       u'url': u'http://www.last.fm/tag/epic'},
+                                      {u'name': u'beautiful',
+                                       u'url': u'http://www.last.fm/tag/beautiful'}]},
+                u'url': u'http://www.last.fm/music/deadmau5/_/Strobe'}}'''
+    track_dict = resp.get('track')
+    try:
+        track = Track.objects.get(name=track_dict.get('name'), artist__name=track_dict.get('artist').get('name'))
+    except ObjectDoesNotExist:
+        track = Track(name=track_dict.get('name'))
+        
+    track.album = None
+    track.lfmid = track_dict.get('id')
+    track.duration = int(track_dict.get('duration'))
+    
+    #image = Image(url=track_dict.get('album')[0].get('#text'))
+    #image.save()
+    #track.image = image
+    
+    track.name = track_dict.get('name')
+    #TODO: track.tags
+    #track.tag_count = 0
+    track.url = track_dict.get('url')
+    track.mbid = track_dict.get('mbid')
+    track.listeners = track_dict.get('listeners')
+    track.global_playcount = int(track_dict.get('playcount'))
+    
+    try:
+        artist = Artist.objects.get(name=track_dict.get('artist').get('name'))
+    except ObjectDoesNotExist:
+        artist = Artist(name=track_dict.get('artist').get('name'))
+        artist.mbid = track_dict.get('artist').get('mbid')
+        artist.url = track_dict.get('artist').get('url')
+        arist.image = None #TODO
+        artist.save()
+    
+    track.artist = artist
+    
+    track.save()
+        
+def get_track_info(track, artist):
+    '''track and artist are strings'''
+    url = get_track_info_url(track, artist)
+    resp = do_call(url)
+    

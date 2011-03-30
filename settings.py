@@ -9,7 +9,7 @@ def deprint(s):
 		print s
 		
 API = 'a9785e0b1bb8deb9eb4e090b3aba9613'
-HOME = '/Users/jamesburkhart/work/pylist'
+HOME = '/Users/jamesburkhart/work/fourk'
 
 ADMINS = (
 	('James Burkhart', 'jburkhart@gm.slc.edu'),
@@ -86,7 +86,7 @@ MIDDLEWARE_CLASSES = (
 
 PID_DIRECTORY = os.path.join(HOME,'pids')
 
-ROOT_URLCONF = 'pylist.urls'
+ROOT_URLCONF = 'fourk.urls'
 
 TEMPLATE_DIRS = (
 	os.path.join(HOME, 'templates').replace('\\','/'),
