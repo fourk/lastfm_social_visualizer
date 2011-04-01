@@ -23,7 +23,7 @@ class LFMContent(AbstractContent):
     name = models.CharField(max_length=255, null=True, blank=True)
     tags = models.ManyToManyField("Tag")
     tag_count = models.IntegerField(max_length=10, default=0)
-    url = models.URLField(verify_exists=False, null=True, blank=True, max_length=150)
+    url = models.URLField(verify_exists=False, null=True, blank=True, max_length=250)
     mbid = models.CharField(max_length=36, null=True, blank=True)
     listeners = models.IntegerField(max_length=10, null=True, blank=True)
     global_playcount = models.IntegerField(max_length=10, null=True, blank=True)
@@ -55,6 +55,9 @@ class Artist(LFMContent):
     similar = models.ManyToManyField("self", through="SimilarArtist", symmetrical=False)
     image = models.ForeignKey(Image, blank=True, null=True)
     
+    def __unicode__(self):
+        return u'%s'%(self.name)
+    
 class Album(LFMContent):
     artist = models.ForeignKey(Artist, related_name='albums')
     images = models.ManyToManyField(Image)
@@ -67,6 +70,9 @@ class Track(LFMContent):
     lfmid = models.CharField(max_length=25, null=True,blank=True)
     image = models.ForeignKey(Image, related_name='tracks', null=True, blank=True)
     duration = models.PositiveIntegerField(max_length=10, default=0)
+    
+    def __unicode__(self):
+        return u'%s - %s (%s)'%(self.name, self.artist.name, self.duration)
     
 class SimilarArtist(AbstractSimilar):
     from_id = models.ForeignKey(Artist,related_name='similar_to')
@@ -97,6 +103,8 @@ class UserTrackWeek(AbstractContent):
     track = models.ForeignKey(Track)
     personal_playcount = models.IntegerField(max_length=5)
     
+    def __unicode__(self):
+        return u'%s - %s - %s times'%(self.track.name, self.track.artist.name, self.personal_playcount)
 # @receiver(post_save, sender=Artist)
 # def postsave_callback(sender, **kwargs):
 #     pass
