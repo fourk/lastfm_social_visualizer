@@ -19,13 +19,15 @@ API = settings.API
 CLIENT = BeanstalkClient()
 
 def get_for_user(username, week=False):
+    print 'Going to get for user %s, week: %s'%(username, week)
     try:
         user = UserProfile.objects.get(lfm_username=username)
         
         response = get_page(username=username, page=1, week=week)
         process_page(user, response, week=week)
         
-        for page in range(2, int(response['tracks']['@attr'].get('totalPages'))+1):
+        key = week and 'toptracks' or 'tracks'
+        for page in range(2, int(response[key]['@attr'].get('totalPages'))+1):
             job_data = {'uname':username, 'page':page, 'week':week}
             CLIENT.call('lfm.process_track_page', json.dumps(job_data))
         
@@ -59,7 +61,7 @@ def process_page(user, resp, week=False):
         user.save()
 def get_track_info_url(track, artist):
     '''track and artist are strings'''
-    return 'http://ws.audioscrobbler.com/2.0/?method=track.getinfo&api_key=%s&track=%s&artist=%s&format=json'%(API, track, artist)
+    return 'http://ws.audioscrobbler.com/2.0/?method=track.getinfo&api_key=%s&track=%s&artist=%s&format=json'%(API, urllib2.quote(track), urllib2.quote(artist))
     
 def get_week_url(username, page=1):
     return 'http://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&period=7day&api_key=%s&user=%s&format=json&page=%s'%(API, username, page)
@@ -110,7 +112,7 @@ def make_track(user, track, week=False):
      u'url': u'http://www.last.fm/music/Ratatat/_/Loud+Pipes'}
      '''
     try:
-        print track.get('name')
+        print track.get('name'),'|',
     except Exception, e:
         print 'error printing track.get("name")!'
         try:
@@ -135,14 +137,12 @@ def make_track(user, track, week=False):
         t.duration = track.get('duration') and int(track.get('duration')) or 0
         t.artist = get_or_create_artist(track.get('artist').get('name'))
         
-        if week:
-            job_data = {'track_name':track.get('name'),
-                        'artist_name':track.get('artist').get('name')}
-            CLIENT.call('lfm.get_track_info', json.dumps(job_data))
+        job_data = {'track_name':track.get('name'),
+                    'artist_name':track.get('artist').get('name')}
+        CLIENT.call('lfm.get_track_info', json.dumps(job_data))
             
-        else:
+        if not week:
             t.tag_count = int(track.get('tagcount'))
-            t.global_playcount = track.get('playcount')
 
         t.save()
         
@@ -349,7 +349,7 @@ def get_friends_page(user, page=1):
             CLIENT.call('lfm.process_friends_page', json.dumps(job_data))
     process_friend_page(user, resp)
     
-def proc_track_info(resp):
+def process_track_info(resp):
     '''{u'track': {u'album': {u'@attr': {u'position': u'10'},
                            u'artist': u'deadmau5',
                            u'image': [{u'#text': u'http://userserve-ak.last.fm/serve/64s/39945013.jpg',
@@ -406,21 +406,15 @@ def proc_track_info(resp):
     track.listeners = track_dict.get('listeners')
     track.global_playcount = int(track_dict.get('playcount'))
     
-    try:
-        artist = Artist.objects.get(name=track_dict.get('artist').get('name'))
-    except ObjectDoesNotExist:
-        artist = Artist(name=track_dict.get('artist').get('name'))
-        artist.mbid = track_dict.get('artist').get('mbid')
-        artist.url = track_dict.get('artist').get('url')
-        arist.image = None #TODO
-        artist.save()
-    
+    artist = get_or_create_artist(track_dict.get('artist').get('name'))
+
     track.artist = artist
     
     track.save()
         
-def get_track_info(track, artist):
-    '''track and artist are strings'''
+def get_track_infos(track, artist):
+    '''track and artist are strings.'''
     url = get_track_info_url(track, artist)
     resp = do_call(url)
+    return resp
     
