@@ -4,7 +4,7 @@ Created on Dec 5, 2010
 @author: jburkhart
 '''
 from django_beanstalkd import beanstalk_job
-from lfm.data_proc import process_page, get_page, get_friends_page, process_friend_page, get_track_info
+from lfm.data_proc import process_page, get_page, get_friends_page, process_friend_page, get_track_infos, process_track_info
 from lfm.models import UserProfile, Track
 import urllib2
 
@@ -75,4 +75,5 @@ def get_track_info(in_str):
     data = json.loads(in_str)
     track_name = data.get('track_name')
     artist_name = data.get('artist_name')
-    resp = get_track_info(track_name, artist_name)
+    resp = get_track_infos(track_name, artist_name)
+    process_track_info(resp)
