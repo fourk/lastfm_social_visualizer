@@ -1,4 +1,57 @@
 
+.header{
+    font:bold 28px Helvetica, Arial, Verdana, Tahoma, sans-serif;
+    border-bottom: 5px solid #ececec;
+    padding: 20px 0 0 0;
+    margin: auto;
+    text-align: center;
+    background-color: #5B3E38;
+}
+.error{
+    display:none;
+}
+.spacer{
+    height: 40px;
+}
+.maindiv{
+    width: 1000px;
+    text-align: center;
+    margin: auto;
+    background-color: #0E4E5A;
+    padding: 30px;
+    border:3px solid #000306;
+    border-radius: 5px;
+    box-shadow: 3px 3px 4px #1c140d;
+    -webkit-box-shadow: 3px 3px 4px #1c140d;
+    -moz-box-shadow: 3px 3px 4px #1c140d;
+}
+label{
+    font-size:34px;
+    position: relative;
+
+}
+#username-textbox{
+    resize:none;
+    border: 1px solid #3F4038;
+    border-radius: 5px;
+    -moz-border-radius: 5px;
+    height: 27px;
+    width: 200px;
+    font-size: 19px;
+    padding: 5px 5px 0 5px;
+}
+#submit-username{
+    background-color: #62BECB;
+    border: 2px solid #3F4038;
+    color: white;
+    width: 74px;
+    height: 36px;
+    position: relative;
+    font-size: 18px;
+    
+    border-radius: 5px;
+    moz-border-radius: 5px;
+}
 #loginBox {
     background-color: #003366;
     border:3px solid #f2e9e1;
@@ -13,6 +66,61 @@
     padding-top:75px;
 
 }
+#toplist-container{
+    padding-top: 5px;
+    height: 550px;
+    overflow-y: scroll;
+    background-color: #000306;
+}
+.inline{
+    display: inline;
+}
+.artist-name{
+    text-align: center;
+    border: 3px solid #62BECB;
+    width: 200px;
+    border-radius: 10px 10px 0 0;
+    -moz-border-radius: 10px 10px 0 0;
+    background-color: #62BECB;
+    color: #000306;
+    left: 45px;
+    position: relative;
+}
+.toplist-item{
+    clear: both;
+}
+.rank-num{
+    width: 45px;
+    text-align: center;
+    float: left;
+}
+.artist-bar{
+    width: 885px;
+    float: left;
+    height: 40px;
+    border: 2px solid #62BECB;
+    margin-bottom: 10px;
+}
+.user-div{
+    float: left;
+    height: 100%;
+}
+.username{
+    position: relative;
+    top: 11px;
+}
+#user-palette{
+    float:left;
+    position:relative;
+    right:15px;
+}
+.user-color{
+    width: 30px;
+    height: 20px;
+    border: 1px solid black;
+}
+
+
 #lastfmUser {
     color:#1C140D;
     border:5px solid #9fddf2;
@@ -23,15 +131,15 @@
     width: 350px;
 }
 
-#header h1 {
+#header {
     font:bold 28px Helvetica, Arial, Verdana, Tahoma, sans-serif;
 }
-#footer p {
+#footer {
     margin-top:-125px;
     text-align:center;
 }
 #spacing {
-  padding-top:15px;
+    padding-top:15px;
 }
 #container {
     background-color: #1c140d;
@@ -60,30 +168,13 @@
   border-top-right-radius: 1em;
   border-top-left-radius: 1em;
 }
-.nopacity {
-  opacity: 1.0;
-}
-table{
-  width:100%;
-}
-thead{
-  padding: 5px 10px;
-}
-td{
-  text-align: left;
-}
-tr:nth-child(even) {
-  background-color: #003366;
-}
-tbody {
-  background-color: #05D;
-}
+
 body {
-    background-color: #f2e9e1;
+    background-color: #3F4038;
     color: #ffffff;
     font:normal 14px Helvetica, Arial, Verdana, Tahoma, sans-serif;
 }
-h2 {
+#h2 {
   font:normal 22px Helvetica, Arial, Verdana, Tahoma, sans-serif;
   margin-bottom: 5px;
 }

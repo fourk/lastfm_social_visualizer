@@ -15,17 +15,38 @@ except ImportError:
 	import simplejson as json
 from django.template.context import RequestContext
 from django.template.loader import get_template
-
-
+#18 color support.
+COLORS = ['DC143C', 'FFB6C1', '8B5F65', 'EE799F', '9F79EE', '483D8B', '0000FF', '3D59AB', '6CA6CD', '00C78C', '2E8B57', '98FB98', '698B22', 'BDB76B', 'DAA520', 'EE9A00', 'EEC591', '6E6E6E'] #these are arranged in the order i found them on http://cloford.com/resources/colours/500col.htm
+COLORS = ['#98FB98', '#00C78C', '#3D59AB', '#BDB76B', '#FFB6C1', '#EE9A00', '#0000FF', '#483D8B', '#DC143C', '#698B22', '#EE799F', '#8B5F65', '#6E6E6E', '#EEC591', '#DAA520', '#9F79EE', '#2E8B57', '#6CA6CD']
 def foo(request):
-    username = request.GET.get('user')
-    resp = helper(username)
-    render(request, 'lfm/top100.html')
+    return render(request, 'lfm/top100.html')
+    
+def get_top100(request):
+    username = request.GET.get('username')
+    retval = None #cache.get('test')
+    
+    if retval is None:
+        (resp,listeners) = helper(username)
+        
+        resp = resp[:100]
+        user_list = []
+        user_hash = {}
+        for user in listeners:
+            user_hash[user.lfm_username] = COLORS.pop()
+            user_list.append(user.lfm_username)
+            
+        
+        for artist_dict in resp:
+            for listener_dict in artist_dict.get('listeners'):
+                listener_dict['listens'] = [{'name': k.track.name, 'playcount': k.personal_playcount} for k in listener_dict['listens']]
+                listener_dict['user'] = listener_dict['user'].lfm_username
+            artist_dict['listens'] = []
+        
+        retval = json.dumps({'lfmData':resp, 'userHash':user_hash, 'userList':user_list})
+        cache.set('test', retval, 60*60*4)
+    return HttpResponse(retval)
     
 def helper(username, friends=True):
-    cached = cache.get('dicks')
-    if cached is not None:
-        return cached
     try:
         user = UserProfile.objects.get(lfm_username=username)
         
@@ -40,55 +61,61 @@ def helper(username, friends=True):
         
     tracks = [listen.track for listen in listens]
     artists = set([track.artist for track in tracks])
-    hash = {}
+    artist_hash = {}
+    
     if artists is None:
         return []
             
     for artist in artists:
         if artist:
-            hash[artist.name] = {'sum_duration': 0,
+            artist_hash[artist.name] = {'sum_duration': 0,
                     'tracks': [],
                     'listens': [],
                     'artist_name': artist.name,
+                    'artist_img': artist.image and artist.image.url or '',
                     'listeners': [],
                     }
         
     for listen in listens:
         if listen.track.artist:
-            hash[listen.track.artist.name]['listens'].append(listen)
-            hash[listen.track.artist.name]['sum_duration'] += listen.track.duration/1000 * listen.personal_playcount
+            artist_hash[listen.track.artist.name]['listens'].append(listen)
+            artist_hash[listen.track.artist.name]['sum_duration'] += listen.track.duration/1000 * listen.personal_playcount
+            if artist_hash[listen.track.artist.name]['artist_img'] == '' and listen.track.artist.image:
+                artist_hash[listen.track.artist.name]['artist_img'] = listen.track.artist.image.url
+                #i think this code is both terrible and broken.
         
     # for track in tracks:
     #     hash[track.artist.name]['tracks'].append(track)
     #     hash[track.artist.name]['sum_duration'] += track.duration
-    
+    all_listeners = []
     ls = []
-    for k in hash:
-        listeners = set([listen.user_profile for listen in hash[k].get('listens')])
+    for k in artist_hash:
+        listeners = set([listen.user_profile for listen in artist_hash[k].get('listens')])
+        all_listeners.extend(listeners)
         for listener in listeners:
-            user_listens = [listen for listen in hash[k].get('listens') if listen.user_profile == listener]
-            hash[k]['listeners'].append({
+            user_listens = [listen for listen in artist_hash[k].get('listens') if listen.user_profile == listener]
+            artist_hash[k]['listeners'].append({
                     'user': listener,
                     'listens': user_listens,
                     'listening_duration': sum([listen.track.duration for listen in user_listens])/1000
                     })
-        hash[k]['listeners'].sort(key=lambda x:x.get('listening_duration'), reverse=True)
-        ls.append(hash[k])
+        artist_hash[k]['listeners'].sort(key=lambda x:x.get('listening_duration'), reverse=True)
+        ls.append(artist_hash[k])
 
     ls.sort(key=operator.itemgetter('sum_duration'), reverse=True)
-    cache.set('dicks', ls, 60*60*2)
-    return ls
+    
+    return (ls, set(all_listeners))
 
-def helper2(username):
-    try:
-        user = UserProfile.objects.get(lfm_username=username)
-        
-    except ObjectDoesNotExist:
-        return {'error': 'fuck, man.'}
-        #TODO: handle this.
-    ls = []
-    for friend in user.friends.all():
-        ls.append({'user':friend, 'data':helper(friend.lfm_username)})
-        
-    return ls
+# def helper2(username):
+#     try:
+#         user = UserProfile.objects.get(lfm_username=username)
+#         
+#     except ObjectDoesNotExist:
+#         return {'error': 'fuck, man.'}
+#         #TODO: handle this.
+#     ls = []
+#     for friend in user.friends.all():
+#         ls.append({'user':friend, 'data':helper(friend.lfm_username)}) THIS PART IS BROKEN NOW
+#         
+#     return ls
     

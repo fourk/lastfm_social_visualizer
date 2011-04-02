@@ -8,7 +8,8 @@ urlpatterns = patterns('',
 					(r'^site_media/(?P<path>.*)$', 
 						'django.views.static.serve', 
 						{'document_root': 'media'}),
-						(r'^$', views.index),
+						(r'^$', 'lfm.views.foo'),
+						(r'^user/', 'lfm.views.get_top100'),
     # Example:
     # (r'^pylist/', include('pylist.foo.urls')),
 
