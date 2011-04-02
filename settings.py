@@ -109,6 +109,12 @@ INSTALLED_APPS = (
 
 INTERNAL_IPS = ('127.0.0.1',)
 BEANSTALK_SERVER= '127.0.0.1:11300'
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+        'LOCATION': '127.0.0.1:11211',
+    }
+}
 try:
 # settings_mine overrides all other settings.
 	from django_settings_mine import *

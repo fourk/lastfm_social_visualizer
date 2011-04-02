@@ -23,7 +23,7 @@ class LFMContent(AbstractContent):
     name = models.CharField(max_length=255, null=True, blank=True)
     tags = models.ManyToManyField("Tag")
     tag_count = models.IntegerField(max_length=10, default=0)
-    url = models.URLField(verify_exists=False, null=True, blank=True, max_length=250)
+    url = models.URLField(verify_exists=False, null=True, blank=True, max_length=500)
     mbid = models.CharField(max_length=36, null=True, blank=True)
     listeners = models.IntegerField(max_length=10, null=True, blank=True)
     global_playcount = models.IntegerField(max_length=10, null=True, blank=True)
@@ -49,7 +49,7 @@ class Image(AbstractContent):
                 u'size': u'extralarge'}],
     
     '''
-    url = models.URLField(max_length=254)
+    url = models.URLField(max_length=500, verify_exists=False)
 
 class Artist(LFMContent):
     similar = models.ManyToManyField("self", through="SimilarArtist", symmetrical=False)
@@ -72,7 +72,10 @@ class Track(LFMContent):
     duration = models.PositiveIntegerField(max_length=10, default=0)
     
     def __unicode__(self):
-        return u'%s - %s (%s)'%(self.name, self.artist.name, self.duration)
+        if self.artist:
+            return u'%s - %s (%s)'%(self.name, self.artist.name, self.duration/1000)
+        else:
+            return u'%s - %s (%s)'%(self.name, 'NO ARTIST', self.duration/1000)
     
 class SimilarArtist(AbstractSimilar):
     from_id = models.ForeignKey(Artist,related_name='similar_to')
@@ -104,7 +107,10 @@ class UserTrackWeek(AbstractContent):
     personal_playcount = models.IntegerField(max_length=5)
     
     def __unicode__(self):
-        return u'%s - %s - %s times'%(self.track.name, self.track.artist.name, self.personal_playcount)
+        if self.track and self.track.artist:
+            return u'%s - %s - %s times'%(self.track.name, self.track.artist.name, self.personal_playcount)
+        else:
+            return u'%s - NO ARTIST - %s times'%(self.track.name, self.personal_playcount)
 # @receiver(post_save, sender=Artist)
 # def postsave_callback(sender, **kwargs):
 #     pass

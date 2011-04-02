@@ -8,7 +8,10 @@ from django.conf import settings
 from lfm.models import Artist, UserTrack, UserProfile, Track, Album, Artist, Image, UserTrackWeek
 from django_beanstalkd import BeanstalkClient
 from django.core.exceptions import ObjectDoesNotExist 
+
 import datetime
+
+from unidecode.unidecoder import Unidecoder
 try:
     import json
 except ImportError:
@@ -17,6 +20,7 @@ import time
 import urllib2
 API = settings.API
 CLIENT = BeanstalkClient()
+DECODER_RING = Unidecoder()
 
 def get_for_user(username, week=False):
     print 'Going to get for user %s, week: %s'%(username, week)
@@ -24,12 +28,13 @@ def get_for_user(username, week=False):
         user = UserProfile.objects.get(lfm_username=username)
         
         response = get_page(username=username, page=1, week=week)
-        process_page(user, response, week=week)
+        has_tracks = process_page(user, response, week=week) #this returns False when the user has no tracks
         
-        key = week and 'toptracks' or 'tracks'
-        for page in range(2, int(response[key]['@attr'].get('totalPages'))+1):
-            job_data = {'uname':username, 'page':page, 'week':week}
-            CLIENT.call('lfm.process_track_page', json.dumps(job_data))
+        if has_tracks:
+            key = week and 'toptracks' or 'tracks'
+            for page in range(2, int(response[key]['@attr'].get('totalPages'))+1):
+                job_data = {'uname':username, 'page':page, 'week':week}
+                CLIENT.call('lfm.process_track_page', json.dumps(job_data))
         
     except Exception, e:
         if settings.DEBUG:
@@ -41,11 +46,19 @@ def get_for_user(username, week=False):
 def process_page(user, resp, week=False):
     '''user is a UserProfile object'''
     key = week and 'toptracks' or 'tracks'
-    tracks = resp[key]['track']
+    tracks = resp[key].get('track')
     
-    for track in tracks:
-        make_track(user, track, week=week)
-    
+    if tracks is None:
+        print 'No tracks for this user!'
+        return False
+
+    if isinstance(tracks, list):
+        for track in tracks:
+            make_track(user, track, week=week)
+    elif isinstance(tracks, dict):
+        make_track(user, tracks, week=week)
+    else:
+        raise Exception('EXCEPTION WTF!? %s'%tracks)
     if not week:
         pagecomplete = int(resp['tracks']['@attr']['page'])
 
@@ -59,9 +72,12 @@ def process_page(user, resp, week=False):
     
         user.track_pages_loaded = user.track_pages_loaded[:pagecomplete-1]+'1'+user.track_pages_loaded[pagecomplete:]
         user.save()
+    
+    return True
+    
 def get_track_info_url(track, artist):
     '''track and artist are strings'''
-    return 'http://ws.audioscrobbler.com/2.0/?method=track.getinfo&api_key=%s&track=%s&artist=%s&format=json'%(API, urllib2.quote(track), urllib2.quote(artist))
+    return 'http://ws.audioscrobbler.com/2.0/?method=track.getinfo&api_key=%s&track=%s&artist=%s&format=json'%(API, urllib2.quote(track.encode('utf-8')), urllib2.quote(artist.encode('utf-8')))
     
 def get_week_url(username, page=1):
     return 'http://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&period=7day&api_key=%s&user=%s&format=json&page=%s'%(API, username, page)
@@ -76,7 +92,8 @@ def get_friends_url(username, page=1):
     return 'http://ws.audioscrobbler.com/2.0/?method=user.getfriends&api_key=%s&user=%s&format=json&page=%s'%(API, username, page)
 
 def get_url_artist_getinfo(artist_name):
-    return 'http://ws.audioscrobbler.com/2.0/?method=artist.getinfo&api_key=%s&artist=%s&format=json'%(API, urllib2.quote(artist_name))
+    url = 'http://ws.audioscrobbler.com/2.0/?method=artist.getinfo&api_key=%s&artist=%s&format=json'%(API, urllib2.quote(artist_name.encode('utf-8')))
+    return url
 
 def get_page(username, page=1, week=False):
     print 'PAGENUMBER',page
@@ -114,6 +131,7 @@ def make_track(user, track, week=False):
     try:
         print track.get('name'),'|',
     except Exception, e:
+        from ipdb import set_trace;set_trace()
         print 'error printing track.get("name")!'
         try:
             print e
@@ -215,54 +233,10 @@ def get_or_create_artist(artist_name):
                                                            u'size': u'mega'}],
                                                u'name': u'Super Mash Bros.',
                                                u'url': u'http://www.last.fm/music/Super+Mash+Bros.'},
-                                              {u'image': [{u'#text': u'http://userserve-ak.last.fm/serve/34/7019915.jpg',
-                                                           u'size': u'small'},
-                                                          {u'#text': u'http://userserve-ak.last.fm/serve/64/7019915.jpg',
-                                                           u'size': u'medium'},
-                                                          {u'#text': u'http://userserve-ak.last.fm/serve/126/7019915.jpg',
-                                                           u'size': u'large'},
-                                                          {u'#text': u'http://userserve-ak.last.fm/serve/252/7019915.jpg',
-                                                           u'size': u'extralarge'},
-                                                          {u'#text': u'http://userserve-ak.last.fm/serve/500/7019915/E603+New.jpg',
-                                                           u'size': u'mega'}],
-                                               u'name': u'E-603',
-                                               u'url': u'http://www.last.fm/music/E-603'},
-                                              {u'image': [{u'#text': u'http://userserve-ak.last.fm/serve/34/16613267.jpg',
-                                                           u'size': u'small'},
-                                                          {u'#text': u'http://userserve-ak.last.fm/serve/64/16613267.jpg',
-                                                           u'size': u'medium'},
-                                                          {u'#text': u'http://userserve-ak.last.fm/serve/126/16613267.jpg',
-                                                           u'size': u'large'},
-                                                          {u'#text': u'http://userserve-ak.last.fm/serve/252/16613267.jpg',
-                                                           u'size': u'extralarge'},
-                                                          {u'#text': u'http://userserve-ak.last.fm/serve/_/16613267/The+Hood+Internet+hoodphones.jpg',
-                                                           u'size': u'mega'}],
-                                               u'name': u'The Hood Internet',
-                                               u'url': u'http://www.last.fm/music/The+Hood+Internet'},
-                                              {u'image': [{u'#text': u'http://userserve-ak.last.fm/serve/34/28063323.jpg',
-                                                           u'size': u'small'},
-                                                          {u'#text': u'http://userserve-ak.last.fm/serve/64/28063323.jpg',
-                                                           u'size': u'medium'},
-                                                          {u'#text': u'http://userserve-ak.last.fm/serve/126/28063323.jpg',
-                                                           u'size': u'large'},
-                                                          {u'#text': u'http://userserve-ak.last.fm/serve/252/28063323.jpg',
-                                                           u'size': u'extralarge'},
-                                                          {u'#text': u'http://userserve-ak.last.fm/serve/_/28063323/Milkman+2326148.jpg',
-                                                           u'size': u'mega'}],
-                                               u'name': u'Milkman',
-                                               u'url': u'http://www.last.fm/music/Milkman'},
-                                              {u'image': [{u'#text': u'http://userserve-ak.last.fm/serve/34/46269447.jpg',
-                                                           u'size': u'small'},
-                                                          {u'#text': u'http://userserve-ak.last.fm/serve/64/46269447.jpg',
-                                                           u'size': u'medium'},
-                                                          {u'#text': u'http://userserve-ak.last.fm/serve/126/46269447.jpg',
-                                                           u'size': u'large'},
-                                                          {u'#text': u'http://userserve-ak.last.fm/serve/252/46269447.jpg',
-                                                           u'size': u'extralarge'},
-                                                          {u'#text': u'http://userserve-ak.last.fm/serve/500/46269447/Sleigh+Bells+sleighbells1024x767.jpg',
-                                                           u'size': u'mega'}],
-                                               u'name': u'Sleigh Bells',
-                                               u'url': u'http://www.last.fm/music/Sleigh+Bells'}]},
+                                                {
+                                                    ....more here.gk
+                                                }
+                                              ]},
                      u'stats': {u'listeners': u'325861', u'playcount': u'19560353'},
                      u'streamable': u'1',
                      u'tags': {u'tag': [{u'name': u'mashup',
