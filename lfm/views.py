@@ -15,15 +15,16 @@ except ImportError:
 	import simplejson as json
 from django.template.context import RequestContext
 from django.template.loader import get_template
-#18 color support.
-COLORS = ['DC143C', 'FFB6C1', '8B5F65', 'EE799F', '9F79EE', '483D8B', '0000FF', '3D59AB', '6CA6CD', '00C78C', '2E8B57', '98FB98', '698B22', 'BDB76B', 'DAA520', 'EE9A00', 'EEC591', '6E6E6E'] #these are arranged in the order i found them on http://cloford.com/resources/colours/500col.htm
-COLORS = ['#98FB98', '#00C78C', '#3D59AB', '#BDB76B', '#FFB6C1', '#EE9A00', '#0000FF', '#483D8B', '#DC143C', '#698B22', '#EE799F', '#8B5F65', '#6E6E6E', '#EEC591', '#DAA520', '#9F79EE', '#2E8B57', '#6CA6CD']
+#17 color support.
+COLORS = ['DC143C', 'FFB6C1', '8B5F65', 'EE799F', '9F79EE', '483D8B', '0000FF', '3D59AB', '6CA6CD', '00C78C', '2E8B57', '98FB98', '698B22', 'BDB76B', 'EE9A00', 'EEC591', '6E6E6E'] #these are arranged in the order i found them on http://cloford.com/resources/colours/500col.htm
+COLORS = ['#98FB98', '#00C78C', '#3D59AB', '#BDB76B', '#FFB6C1', '#EE9A00', '#0000FF', '#483D8B', '#DC143C', '#698B22', '#EE799F', '#8B5F65', '#6E6E6E', '#EEC591', '#9F79EE', '#2E8B57', '#6CA6CD']
 def foo(request):
     return render(request, 'lfm/top100.html')
     
 def get_top100(request):
     username = request.GET.get('username')
-    retval = None #cache.get('test')
+    retval = None
+    retval = cache.get('test')
     
     if retval is None:
         (resp,listeners) = helper(username)
@@ -56,8 +57,7 @@ def helper(username, friends=True):
     listens = []
     if friends:
         [listens.append(listen) for friend in user.friends.all() for listen in friend.usertrackweek_set.all()]
-    else:
-        listens.append(user.usertrackweek_set.all())
+    listens.extend(user.usertrackweek_set.all())
         
     tracks = [listen.track for listen in listens]
     artists = set([track.artist for track in tracks])
@@ -81,7 +81,7 @@ def helper(username, friends=True):
             artist_hash[listen.track.artist.name]['listens'].append(listen)
             artist_hash[listen.track.artist.name]['sum_duration'] += listen.track.duration/1000 * listen.personal_playcount
             if artist_hash[listen.track.artist.name]['artist_img'] == '' and listen.track.artist.image:
-                artist_hash[listen.track.artist.name]['artist_img'] = listen.track.artist.image.url
+                artist_hash[listen.track.artist.name]['artist_img'] = listen.track.artist.image.url;
                 #i think this code is both terrible and broken.
         
     # for track in tracks:

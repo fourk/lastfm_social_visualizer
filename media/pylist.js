@@ -55,6 +55,7 @@ function setup_user_palette(){
 }
 function process_user_divs(){
     var maxWidth;
+    var maxSum;
     $('.toplist-item').each(function(i, val){
         
         var sumDuration = 0;
@@ -76,5 +77,9 @@ function process_user_divs(){
             });
             //sumDuration+=$(value).data('data').
         });
+        if (i==0){
+            maxSum = sumDuration
+        }
+        //$(val).find('.artist-bar').css('width', String(sumDuration/maxSum * 100)+"%")
     });
 };
