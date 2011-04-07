@@ -64,9 +64,16 @@ function process_user_divs(){
                 return;
             }
             $(this).addClass('selected');
-            var tracks = lfmData[i]['tracks'];
+            var tracks = lfmData[i].tracks;
             for (var ti=0; ti<tracks.length; ti++){
                 var track = tracks[ti];
+                console.log(track);
+                var userDeets = '';
+                for (var li=0; li<track.listens.length; li++){
+                    console.log(userDeets);
+                    console.log(li);
+                    userDeets = userDeets + track.listens[li].user + " (" + track.listens[li].playcount+") ";
+                }
                 $('.detailed-hud').append(
                     '<div class="detail">'+
                         '<div class="playcount">'+
@@ -77,6 +84,9 @@ function process_user_divs(){
                         '</div>'+
                         '<div class="trackname">'+
                         track.name+
+                        '</div>'+
+                        '<div class="user-detail">'+
+                            userDeets+
                         '</div>'+
                         '<div class="duration-bar"></div>'+
                     '</div>'
@@ -94,7 +104,7 @@ function process_user_divs(){
             
             var listening_duration = lfmData[i].listeners[index].listening_duration;
             var width = parseInt(listening_duration)/sumDuration * 100;
-            console.log(width);
+            
             $(value).css('width', width + '%');
             $(value).css('background-color', users[lfmData[i].listeners[index].user]);
             $(value).find('span').append(lfmData[i].listeners[index].user);
@@ -130,7 +140,7 @@ function process_user_divs(){
                         '</div>'
                     );
                     var pct = listen.duration / listens[0].duration * 100
-                    console.log(pct)
+                    
                     $('.detailed-hud').find('.duration-bar').last().css('width', pct + "%")
                 }
             })

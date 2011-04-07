@@ -24,24 +24,24 @@ def foo(request):
 def get_top100(request):
     username = request.GET.get('username')
     retval = None
-    # retval = cache.get('testing')
-    
+    retval = cache.get('testing')
+
     if retval is None:
         (resp,listeners) = helper(username)
-        
+    
         resp = resp[:100]
         user_list = []
         user_hash = {}
         for user in listeners:
             user_hash[user.lfm_username] = COLORS.pop()
             user_list.append(user.lfm_username)
-        
+    
         for artist_dict in resp:
             for listener_dict in artist_dict.get('listeners'):
                 listener_dict['listens'].sort(key=lambda x:x.track.duration * x.personal_playcount, reverse=True)
                 listener_dict['listens'] = [{'name': k.track.name, 'playcount': k.personal_playcount, 'duration': k.track.duration * k.personal_playcount / 1000} for k in listener_dict['listens']]
                 listener_dict['user'] = listener_dict['user'].lfm_username
-                
+            
             tracks = []
             for track_key in artist_dict.get('tracks'):
                 track_dict = artist_dict['tracks'][track_key]
@@ -53,9 +53,10 @@ def get_top100(request):
             tracks.sort(key=lambda x:x.get('duration'), reverse=True)
             artist_dict['tracks'] = tracks
             artist_dict['listens'] = []
-        
+    
         retval = json.dumps({'lfmData':resp, 'userHash':user_hash, 'userList':user_list})
         cache.set('testing', retval, 60*60*4)
+
     return HttpResponse(retval)
     
 def helper(username, friends=True):
