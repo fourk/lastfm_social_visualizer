@@ -57,7 +57,35 @@ function process_user_divs(){
     var maxWidth;
     var maxSum;
     $('.toplist-item').each(function(i, val){
-        
+        $(this).find('.artist-name').click(function(){
+            $('.detailed-hud').empty();
+            if ($(this).hasClass('selected')){
+                $('.selected').removeClass('selected');
+                return;
+            }
+            $(this).addClass('selected');
+            var tracks = lfmData[i]['tracks'];
+            for (var ti=0; ti<tracks.length; ti++){
+                var track = tracks[ti];
+                $('.detailed-hud').append(
+                    '<div class="detail">'+
+                        '<div class="playcount">'+
+                            String(track.playcount)+
+                        '</div>'+
+                        '<div class="duration-str">'+
+                            String(track.duration)+' Seconds'+
+                        '</div>'+
+                        '<div class="trackname">'+
+                        track.name+
+                        '</div>'+
+                        '<div class="duration-bar"></div>'+
+                    '</div>'
+                );
+                var pct = track.duration / tracks[0].duration * 100;
+                $('.detailed-hud').find('.duration-bar').last().css('width', pct + "%")
+            }
+            
+        })
         var sumDuration = 0;
         $(val).find('.user-div').each(function(index, value){
             sumDuration+=lfmData[i].listeners[index].listening_duration;
@@ -75,11 +103,43 @@ function process_user_divs(){
                     $(spanV).css('display','none');
                 };
             });
+            $(value).click(function(){
+                $('.detailed-hud').empty();
+                if ($(this).hasClass('selected')){
+                    $('.selected').removeClass('selected');
+                    return;
+                }
+                $('.selected').removeClass('selected');
+                
+                $(this).addClass('selected');
+                var listens = lfmData[i].listeners[index].listens;
+                for (var li=0; li<listens.length; li++){
+                    var listen = listens[li];
+                    $('.detailed-hud').append(
+                        '<div class="detail">'+
+                            '<div class="playcount">'+
+                                String(listen.playcount)+
+                            '</div>'+
+                            '<div class="duration-str">'+
+                                String(listen.duration)+' Seconds'+
+                            '</div>'+
+                            '<div class="trackname">'+
+                            listen.name+
+                            '</div>'+
+                            '<div class="duration-bar"></div>'+
+                        '</div>'
+                    );
+                    var pct = listen.duration / listens[0].duration * 100
+                    console.log(pct)
+                    $('.detailed-hud').find('.duration-bar').last().css('width', pct + "%")
+                }
+            })
             //sumDuration+=$(value).data('data').
         });
         if (i==0){
             maxSum = sumDuration
         }
+        
         //$(val).find('.artist-bar').css('width', String(sumDuration/maxSum * 100)+"%")
     });
 };

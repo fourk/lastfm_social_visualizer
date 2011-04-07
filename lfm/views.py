@@ -24,7 +24,7 @@ def foo(request):
 def get_top100(request):
     username = request.GET.get('username')
     retval = None
-    retval = cache.get('test')
+    # retval = cache.get('testing')
     
     if retval is None:
         (resp,listeners) = helper(username)
@@ -35,16 +35,27 @@ def get_top100(request):
         for user in listeners:
             user_hash[user.lfm_username] = COLORS.pop()
             user_list.append(user.lfm_username)
-            
         
         for artist_dict in resp:
             for listener_dict in artist_dict.get('listeners'):
-                listener_dict['listens'] = [{'name': k.track.name, 'playcount': k.personal_playcount} for k in listener_dict['listens']]
+                listener_dict['listens'].sort(key=lambda x:x.track.duration * x.personal_playcount, reverse=True)
+                listener_dict['listens'] = [{'name': k.track.name, 'playcount': k.personal_playcount, 'duration': k.track.duration * k.personal_playcount / 1000} for k in listener_dict['listens']]
                 listener_dict['user'] = listener_dict['user'].lfm_username
+                
+            tracks = []
+            for track_key in artist_dict.get('tracks'):
+                track_dict = artist_dict['tracks'][track_key]
+                tracks.append({'name':track_key, 
+                        'duration':track_dict.get('sum_duration'), 
+                        'playcount':track_dict.get('sum_playcount'),
+                        'listens': [{'user':listen.user_profile.lfm_username, 'playcount':listen.personal_playcount} for listen in track_dict.get('listens')],
+                        })
+            tracks.sort(key=lambda x:x.get('duration'), reverse=True)
+            artist_dict['tracks'] = tracks
             artist_dict['listens'] = []
         
         retval = json.dumps({'lfmData':resp, 'userHash':user_hash, 'userList':user_list})
-        cache.set('test', retval, 60*60*4)
+        cache.set('testing', retval, 60*60*4)
     return HttpResponse(retval)
     
 def helper(username, friends=True):
@@ -69,16 +80,16 @@ def helper(username, friends=True):
     for artist in artists:
         if artist:
             artist_hash[artist.name] = {'sum_duration': 0,
-                    'tracks': [],
+                    'tracks': {},
                     'listens': [],
                     'artist_name': artist.name,
                     'artist_img': artist.image and artist.image.url or '',
                     'listeners': [],
                     }
-        
+    
     for listen in listens:
         if listen.track.artist:
-            artist_hash[listen.track.artist.name]['listens'].append(listen)
+            artist_hash[listen.track.artist.name]['listens'].append(listen)#TODO
             artist_hash[listen.track.artist.name]['sum_duration'] += listen.track.duration/1000 * listen.personal_playcount
             if artist_hash[listen.track.artist.name]['artist_img'] == '' and listen.track.artist.image:
                 artist_hash[listen.track.artist.name]['artist_img'] = listen.track.artist.image.url;
@@ -89,6 +100,7 @@ def helper(username, friends=True):
     #     hash[track.artist.name]['sum_duration'] += track.duration
     all_listeners = []
     ls = []
+    
     for k in artist_hash:
         listeners = set([listen.user_profile for listen in artist_hash[k].get('listens')])
         all_listeners.extend(listeners)
@@ -100,6 +112,13 @@ def helper(username, friends=True):
                     'listening_duration': sum([listen.track.duration for listen in user_listens])/1000
                     })
         artist_hash[k]['listeners'].sort(key=lambda x:x.get('listening_duration'), reverse=True)
+        tracks = list(set([listen.track.name for listen in artist_hash[k].get('listens')]))
+        for track in tracks:
+            artist_hash[k]['tracks'][track] = {'listens':[], 'sum_duration':0, 'sum_playcount':0}
+        for listen in artist_hash[k].get('listens'):
+            artist_hash[k]['tracks'][listen.track.name]['listens'].append(listen)
+            artist_hash[k]['tracks'][listen.track.name]['sum_playcount']+=listen.personal_playcount
+            artist_hash[k]['tracks'][listen.track.name]['sum_duration']+= listen.personal_playcount * listen.track.duration /1000
         ls.append(artist_hash[k])
 
     ls.sort(key=operator.itemgetter('sum_duration'), reverse=True)

@@ -25,6 +25,14 @@
     -webkit-box-shadow: 3px 3px 4px #1c140d;
     -moz-box-shadow: 3px 3px 4px #1c140d;
 }
+.gui{
+}
+.detailed-hud{
+    padding-top: 5px;
+    min-height: 150px;
+    background-color: #000306;
+    margin: 36px 0 0 30px;
+}
 label{
     font-size:34px;
     position: relative;
@@ -95,6 +103,8 @@ label{
     float: left;
 }
 .artist-bar{
+    overflow-x: hidden;
+    overflow-y: hidden;
     width: 885px;
     float: left;
     height: 40px;
@@ -119,8 +129,27 @@ label{
     height: 20px;
     border: 1px solid black;
 }
-
-
+.playcount{
+    float: left;
+    width: 100px;
+}
+.trackname{
+    
+}
+.duration-str{
+    float: left;
+    width: 100px;
+}
+.duration-bar{
+    height:5px;
+    background-color: lime;
+}
+.selected{
+    height: 32px;
+    background-color: blue;
+    border: 4px solid black;
+    box-shadow: 4px 4px 8px white;
+}
 #lastfmUser {
     color:#1C140D;
     border:5px solid #9fddf2;
@@ -178,7 +207,7 @@ body {
   font:normal 22px Helvetica, Arial, Verdana, Tahoma, sans-serif;
   margin-bottom: 5px;
 }
-html, body {height: 100%;}
+html {height: 100%;}
 /*
     
     margin:0px auto;
