@@ -90,7 +90,11 @@ def get_top100(request):
         for artist_dict in resp:
             for listener_dict in artist_dict.get('listeners'):
                 listener_dict['listens'].sort(key=lambda x:x.track.duration * x.personal_playcount, reverse=True)
-                listener_dict['listens'] = [{'name': k.track.name, 'playcount': k.personal_playcount, 'duration': k.track.duration * k.personal_playcount / 1000} for k in listener_dict['listens']]
+                listener_dict['listens'] = [{'name': k.track.name, 
+                            'playcount': k.personal_playcount, 
+                            'duration': k.track.duration * k.personal_playcount / 1000,
+                            'id': k.track.id,
+                            } for k in listener_dict['listens']]
                 listener_dict['user'] = listener_dict['user'].lfm_username
             
             tracks = []
@@ -99,7 +103,7 @@ def get_top100(request):
                 tracks.append({'name':track_key, 
                         'duration':track_dict.get('sum_duration'), 
                         'playcount':track_dict.get('sum_playcount'),
-                        'listens': [{'user':listen.user_profile.lfm_username, 'playcount':listen.personal_playcount} for listen in track_dict.get('listens')],
+                        'listens': [{'user':listen.user_profile.lfm_username, 'playcount':listen.personal_playcount, 'id':listen.track.id} for listen in track_dict.get('listens')],
                         'id': track_dict.get('id'),
                         })
             tracks.sort(key=lambda x:x.get('duration'), reverse=True)

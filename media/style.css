@@ -83,10 +83,41 @@ label{
 
 }
 #toplist-container{
+/*    padding-top: 5px;
+    height: 550px;
+    overflow-y: hidden;
+    background-color: #000306;
+    */
+}
+#primary-container{
     padding-top: 5px;
     height: 550px;
     overflow-y: hidden;
     background-color: #000306;
+}
+#youtube-container{
+    height: 100%;
+    width: 100%;
+/*    background-color: black;
+    min-height: 550px;
+    width: 957px;
+    position: relative;
+    left: 30px;
+*/}
+.youtube-nav{
+    float: right;
+    font-size: 18px;
+    cursor: pointer;
+    position: relative;
+    left: -5px;
+    top: 5px;
+    border: 5px solid #AE1009;
+    border-radius: 30px;
+    width: 20px;
+    text-align: center;
+    background-color: #AE1009;
+    color: white;
+    font-weight: bold;
 }
 .inline{
     display: inline;
@@ -184,9 +215,9 @@ label{
 }
 #player{
     margin: auto;
-    position: relative;
-    width: 1000px;
-}
+/*        position: relative;
+width: 1000px;
+*/}
 
 #lastfmUser {
     color:#1C140D;

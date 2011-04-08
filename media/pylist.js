@@ -5,6 +5,7 @@ var users;
 var userList;
 var scrollIndex = 0;
 var scrollCounter = 0;
+var scrollTime = new Date().getTime();
 $(document).ready(function(){
     $('#username-form').submit(function(e){
         $('.username-entry').slideUp('slow');
@@ -61,15 +62,25 @@ firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 var player;
 function onYouTubePlayerAPIReady(){
     youtubeReady = true;
+    $('#youtube-close').click(function(){
+        $('#youtube-container').slideUp('fast', function(){
+            $('#player').empty();
+            $('#toplist-container').slideDown('fast');
+        });
+    });
+    $('#youtube-minimize').click(function(){
+        $('#youtube-container').slideUp('fast');
+    });
 }
 function youtube(videoID){
     if (! youtubeReady){
         alert('WAIT IT OUT BRO. Youtube isn\'t ready yet! Or reload if its been a minute.');
         return;
     }
+    console.log('made a player, player.');
     player = new YT.Player('player', {
-        height: '585',
-        width: '960',
+        height: '540',
+        width: '800',
         videoId: videoID,
         events: {
             'onReady': onPlayerReady,
@@ -78,6 +89,7 @@ function youtube(videoID){
     });
 }
 function onPlayerReady(event){
+    $('#youtube-container').show();
     event.target.playVideo();
 }
 
@@ -181,6 +193,7 @@ function printInfo(e)
     while(Math.abs(scrollCounter) > 5){
         doScroll();
     }
+    scrollTime = new Date().getTime();
     // if (normal>0){
     //     target = $('#nav-up');
     // }
@@ -200,26 +213,56 @@ function printInfo(e)
 function setup_nav_buttons(){
     $('#nav-top').click(function(){
         $('.toplist-item').slideDown('fast');
+        scale_user_divs();
     });
     $('#nav-up').click(function(){
-        $('.toplist-item:eq('+scrollIndex+')').slideDown('fast');
+        
+        
         if (scrollIndex > 0){
             scrollIndex--;
         }
+        $('.toplist-item:eq('+scrollIndex+')').slideDown('fast');
+        scale_user_divs();
         //$('.toplist-item:hidden').last().slideDown(100);
     });
     $('#nav-down').click(function(){
         $('.toplist-item:eq('+scrollIndex+')').slideUp('fast');
-        if (scrollIndex < 96){
+        if (scrollIndex < 92){
             scrollIndex++;
         }
-        
+        scale_user_divs();
         //$('.toplist-item:visible').first().slideUp(100);
     });
     $('#nav-bot').click(function(){
         $('.toplist-item:lt(93)').slideUp('fast');
+        scale_user_divs();
     });
 }
+function scale_user_divs(){
+    var scrollStart = scrollIndex;
+    var scrollTo = Math.min(100,scrollStart+10);
+    
+    for (var i=scrollStart; i< scrollTo; i++){
+        var pct = lfmData[i].sum_duration / lfmData[scrollStart].sum_duration * 92.5 //this means that the calculated width of the first item is 885.
+        $('#toplist'+String(i)).find('.artist-bar').css('width', pct+'%');
+    }
+}
+function trackClick(){
+    if ($(this).data('id') === ''){
+        alert('fuck, man. no youtube video available.');
+    }
+    else{
+        console.log('WTB RESP');
+        $.ajax({
+            url: '/youtube/'+$(this).data('id'),
+            success: function(data){
+                console.log('GOTRESP');
+                console.log(data);
+                youtube(data);
+            }
+        })
+    }
+};
 function process_user_divs(){
     var maxWidth;
     var maxSum;
@@ -262,22 +305,7 @@ function process_user_divs(){
                 $('.detailed-hud').find('.duration-bar').last().css('width', pct + "%");
                 $('.trackname').last().data('id', track.id);
             }
-            $('.trackname').click(function(){
-                if ($(this).data('id') === ''){
-                    alert('fuck, man. no youtube video available.');
-                }
-                else{
-                    $.ajax({
-                        url: '/youtube/'+$(this).data('id'),
-                        success: function(data){
-                            console.log('GOTRESP');
-                            console.log(data);
-                            youtube(data);
-                        }
-                    })
-                }
-                console.log($(this).data('id'));
-            });
+            $('.trackname').click(trackClick);
         });
         var sumDuration = 0;
         $(val).find('.user-div').each(function(index, value){
@@ -323,9 +351,11 @@ function process_user_divs(){
                         '</div>'
                     );
                     var pct = listen.duration / listens[0].duration * 100
-                    
+                    console.log(listen);
+                    $('.trackname').last().data('id', listen.id);
                     $('.detailed-hud').find('.duration-bar').last().css('width', pct + "%")
                 }
+                $('.trackname').click(trackClick);
             })
             //sumDuration+=$(value).data('data').
         });
