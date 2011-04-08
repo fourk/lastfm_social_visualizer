@@ -48,7 +48,7 @@ function add_to_dom(){
             bar.append('<div class="user-div"><span class="username"></span></div>');
             bar.children().last().data('index', i);
         };
-        
+        bar.after('<div class="clear" />');
     };
     $('#loading-icon').hide();
     console.log('done');
@@ -70,6 +70,11 @@ function onYouTubePlayerAPIReady(){
     });
     $('#youtube-minimize').click(function(){
         $('#youtube-container').slideUp('fast');
+        $('#youtube-maximize').css('left','10px')
+    });
+    $('#youtube-maximize').click(function(){
+        $('#youtube-container').slideDown('fast');
+        $('#youtube-maximize').css('left','-125px');
     });
 }
 function youtube(videoID){
@@ -87,6 +92,7 @@ function youtube(videoID){
             'onStateChange': onPlayerStateChange
         }
     });
+    $('#youtube-maximize').css('left','-125px');
 }
 function onPlayerReady(event){
     $('#youtube-container').show();

@@ -104,7 +104,13 @@ label{
     position: relative;
     left: 30px;
 */}
+#youtube-maximize{
+    float:none;
+    top: 10px;
+    left: 10px;
+}
 .youtube-nav{
+    margin-left: 10px;
     float: right;
     font-size: 18px;
     cursor: pointer;
