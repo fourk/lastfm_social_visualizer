@@ -14,11 +14,11 @@
     height: 40px;
 }
 .maindiv{
-    width: 1000px;
+    width: 1050px;
     text-align: center;
     margin: auto;
     background-color: #0E4E5A;
-    padding: 30px;
+    padding: 30px 10px 30px 20px;
     border:3px solid #000306;
     border-radius: 5px;
     box-shadow: 3px 3px 4px #1c140d;
@@ -85,7 +85,7 @@ label{
 #toplist-container{
     padding-top: 5px;
     height: 550px;
-    overflow-y: scroll;
+    overflow-y: hidden;
     background-color: #000306;
 }
 .inline{
@@ -128,9 +128,9 @@ label{
     top: 11px;
 }
 #user-palette{
-    float:left;
-    position:relative;
-    right:15px;
+    float: left;
+    position: relative;
+    right: 10px;
 }
 .user-color{
     width: 30px;
@@ -160,6 +160,34 @@ label{
     border: 4px solid black;
     box-shadow: 4px 4px 8px white;
 }
+#nav-btns{
+    float: right;
+}
+.nav-btn{
+    height: 50px;
+    width: 50px;
+    background-color: #AE76F0;
+    border: 3px solid black;
+    margin: 62px 0 15px 5px;
+}
+#nav-up{
+    background-image: url('/site_media/up.png');
+}
+#nav-down{
+    background-image: url('/site_media/down.png');
+}
+#nav-top{
+    background-image: url('/site_media/top.png');
+}
+#nav-bot{
+    background-image: url('/site_media/bot.png');
+}
+#player{
+    margin: auto;
+    position: relative;
+    width: 1000px;
+}
+
 #lastfmUser {
     color:#1C140D;
     border:5px solid #9fddf2;

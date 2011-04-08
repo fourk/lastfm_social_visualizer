@@ -13,7 +13,9 @@
         <div class="header">
             <span>Sup. This is the header.</span>
             <span>Top 100</span>
+            <div id="displayInfo"></div>
         </div>
+        <div id="player"></div>
         <div class="spacer"></div>
         <div class="maindiv username-entry">
             <form id="username-form">
@@ -26,6 +28,12 @@
         <div class="spacer username-entry"></div>
         <div class="maindiv gui">
             <div id="user-palette"></div>
+            <div id="nav-btns">
+                <div class='nav-btn' id="nav-top"></div>
+                <div class='nav-btn' id="nav-up"></div>
+                <div class='nav-btn' id="nav-down"></div>
+                <div class='nav-btn' id="nav-bot"></div>
+            </div>
             <div id="toplist-container">
                 <img src="/site_media/ajax-loader.gif" id="loading-icon" style="display:none;"></img>
                 {% for i in 100|get_range %}

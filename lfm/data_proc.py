@@ -5,18 +5,17 @@ Created on Nov 8, 2010
 '''
 from django.db import reset_queries, close_connection
 from django.conf import settings
-from lfm.models import Artist, UserTrack, UserProfile, Track, Album, Artist, Image, UserTrackWeek
+from lfm.models import Artist, UserTrack, UserProfile, Track, Image, UserTrackWeek
 from django_beanstalkd import BeanstalkClient
 from django.core.exceptions import ObjectDoesNotExist 
 
-import datetime
 
 from unidecode.unidecoder import Unidecoder
 try:
     import json
 except ImportError:
     import simplejson as json
-import time
+
 import urllib2
 API = settings.API
 CLIENT = BeanstalkClient()

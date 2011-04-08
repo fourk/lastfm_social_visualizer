@@ -10,6 +10,7 @@ urlpatterns = patterns('',
 						{'document_root': 'media'}),
 						(r'^$', 'lfm.views.foo'),
 						(r'^user/', 'lfm.views.get_top100'),
+						(r'^youtube/(?P<id>.*?)/$', 'lfm.views.youtube'),
     # Example:
     # (r'^pylist/', include('pylist.foo.urls')),
 

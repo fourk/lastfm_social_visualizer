@@ -1,6 +1,10 @@
+var youtubeReady = false;
+//var videoID = 'Z19zFlPah-o';
 var lfmData;
 var users;
 var userList;
+var scrollIndex = 0;
+var scrollCounter = 0;
 $(document).ready(function(){
     $('#username-form').submit(function(e){
         $('.username-entry').slideUp('slow');
@@ -20,6 +24,8 @@ $(document).ready(function(){
                 add_to_dom();
                 process_user_divs();
                 setup_user_palette();
+                setup_nav_buttons();
+                hookEvent('toplist-container', 'mousewheel', printInfo);
             }
         }); 
         return false;
@@ -46,12 +52,173 @@ function add_to_dom(){
     $('#loading-icon').hide();
     console.log('done');
 };
+
+var tag = document.createElement('script');
+tag.src = "http://www.youtube.com/player_api";
+var firstScriptTag = document.getElementsByTagName('script')[0];
+firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+var player;
+function onYouTubePlayerAPIReady(){
+    youtubeReady = true;
+}
+function youtube(videoID){
+    if (! youtubeReady){
+        alert('WAIT IT OUT BRO. Youtube isn\'t ready yet! Or reload if its been a minute.');
+        return;
+    }
+    player = new YT.Player('player', {
+        height: '585',
+        width: '960',
+        videoId: videoID,
+        events: {
+            'onReady': onPlayerReady,
+            'onStateChange': onPlayerStateChange
+        }
+    });
+}
+function onPlayerReady(event){
+    event.target.playVideo();
+}
+
+var done = false;
+function onPlayerStateChange(event){
+    if (event.data == YT.PlayerState.PLAYING && !done){
+        setTimeout(stopVideo, 6000);
+        done = true;
+    }
+}
+function stopVideo(){
+    player.stopVideo();
+}
+
 function setup_user_palette(){
     for (var i=0; i<userList.length; i++){
         $('#user-palette').append('<div class="user-color"></div>');
         $('#user-palette').children().last().css('background-color', users[userList[i]]);
     }
     
+};
+function hookEvent(element, eventName, callback)
+{
+  if(typeof(element) == "string")
+    element = document.getElementById(element);
+  if(element == null)
+    return;
+  if(element.addEventListener)
+  {
+    if(eventName == 'mousewheel')
+      element.addEventListener('DOMMouseScroll', callback, false);  
+    element.addEventListener(eventName, callback, false);
+  }
+  else if(element.attachEvent)
+    element.attachEvent("on" + eventName, callback);
+}
+
+function unhookEvent(element, eventName, callback)
+{
+  if(typeof(element) == "string")
+    element = document.getElementById(element);
+  if(element == null)
+    return;
+  if(element.removeEventListener)
+  {
+    if(eventName == 'mousewheel')
+      element.removeEventListener('DOMMouseScroll', callback, false);  
+    element.removeEventListener(eventName, callback, false);
+  }
+  else if(element.detachEvent)
+    element.detachEvent("on" + eventName, callback);
+};
+function MouseWheel(e)
+{
+  e = e ? e : window.event;
+  var wheelData = e.detail ? e.detail * -1 : e.wheelDelta / 40;
+  //do something
+  return cancelEvent(e);
+}
+function cancelEvent(e)
+{
+        e = e ? e : window.event;
+        if(e.stopPropagation){
+            e.stopPropagation();
+        }
+        if(e.preventDefault){
+            e.preventDefault();
+        }
+        e.cancelBubble = true;
+        e.cancel = true;
+        e.returnValue = false;
+        return false;
+}
+function printInfo(e)
+{
+    e = e ? e : window.event;
+    var raw = e.detail ? e.detail : e.wheelDelta;
+    var normal = e.detail ? e.detail * -1 : e.wheelDelta / 40;
+    document.getElementById('displayInfo').innerHTML = "&nbsp;Raw Value: " + raw + "&nbsp;Normalized Value: " + normal;
+    var target;
+    if (Math.abs(scrollCounter+normal) < 100){
+        scrollCounter+=normal;
+    }
+    function doScroll(){
+        console.log(scrollCounter);
+        if(scrollCounter > 0){
+            scrollCounter= scrollCounter/2 -1;
+            target = $('#nav-up');
+        }
+        else{
+            scrollCounter= scrollCounter/2 +1;
+            target = $('#nav-down');
+        }
+        target.click();
+    }
+    if (Math.abs(scrollCounter) > 1){
+        //for(var i=0; Math.abs(scrollCounter) < 1; i++){
+        doScroll();
+        //}
+    }
+    while(Math.abs(scrollCounter) > 5){
+        doScroll();
+    }
+    // if (normal>0){
+    //     target = $('#nav-up');
+    // }
+    // else{
+    //     target = $('#nav-down');
+    // }
+    // console.log(target);
+    // target.click();
+    // if (Math.abs(normal) > 15){
+    //     target.click();
+    // }
+    // if (Math.abs(normal) > 50){
+    //     target.click();
+    // }
+    cancelEvent(e);
+}
+function setup_nav_buttons(){
+    $('#nav-top').click(function(){
+        $('.toplist-item').slideDown('fast');
+    });
+    $('#nav-up').click(function(){
+        $('.toplist-item:eq('+scrollIndex+')').slideDown('fast');
+        if (scrollIndex > 0){
+            scrollIndex--;
+        }
+        //$('.toplist-item:hidden').last().slideDown(100);
+    });
+    $('#nav-down').click(function(){
+        $('.toplist-item:eq('+scrollIndex+')').slideUp('fast');
+        if (scrollIndex < 96){
+            scrollIndex++;
+        }
+        
+        //$('.toplist-item:visible').first().slideUp(100);
+    });
+    $('#nav-bot').click(function(){
+        $('.toplist-item:lt(93)').slideUp('fast');
+    });
 }
 function process_user_divs(){
     var maxWidth;
@@ -92,10 +259,26 @@ function process_user_divs(){
                     '</div>'
                 );
                 var pct = track.duration / tracks[0].duration * 100;
-                $('.detailed-hud').find('.duration-bar').last().css('width', pct + "%")
+                $('.detailed-hud').find('.duration-bar').last().css('width', pct + "%");
+                $('.trackname').last().data('id', track.id);
             }
-            
-        })
+            $('.trackname').click(function(){
+                if ($(this).data('id') === ''){
+                    alert('fuck, man. no youtube video available.');
+                }
+                else{
+                    $.ajax({
+                        url: '/youtube/'+$(this).data('id'),
+                        success: function(data){
+                            console.log('GOTRESP');
+                            console.log(data);
+                            youtube(data);
+                        }
+                    })
+                }
+                console.log($(this).data('id'));
+            });
+        });
         var sumDuration = 0;
         $(val).find('.user-div').each(function(index, value){
             sumDuration+=lfmData[i].listeners[index].listening_duration;

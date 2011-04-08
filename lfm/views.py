@@ -1,25 +1,76 @@
 # Create your views here.
 from django.core.exceptions import ObjectDoesNotExist 
-from django.shortcuts import render_to_response, render
-from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
 from django.http import HttpResponse
-from django.conf import settings
-from django.views.decorators.cache import cache_page
 from django.core.cache import cache
 import operator
-from lfm.models import UserProfile
+from lfm.models import UserProfile, Track
+
+import gdata.youtube
+import gdata.youtube.service
 
 try:
 	import json
 except ImportError:
 	import simplejson as json
-from django.template.context import RequestContext
-from django.template.loader import get_template
+	
+SERVICE = gdata.youtube.service.YouTubeService()
+
+def init_service():
+    global SERVICE
+    SERVICE.ssl = False
+    SERVICE.developer_key = "AI39si5gXMVIPK2a48hTLPj9lJTYrpqIBHyDYX57krStY63u14jwuo5H0jUq3DK5-0lb7ZPQISQL8px85CnXrcAXbFRqS6lpPw"
+    
 #17 color support.
 COLORS = ['DC143C', 'FFB6C1', '8B5F65', 'EE799F', '9F79EE', '483D8B', '0000FF', '3D59AB', '6CA6CD', '00C78C', '2E8B57', '98FB98', '698B22', 'BDB76B', 'EE9A00', 'EEC591', '6E6E6E'] #these are arranged in the order i found them on http://cloford.com/resources/colours/500col.htm
 COLORS = ['#98FB98', '#00C78C', '#3D59AB', '#BDB76B', '#FFB6C1', '#EE9A00', '#0000FF', '#483D8B', '#DC143C', '#698B22', '#EE799F', '#8B5F65', '#6E6E6E', '#EEC591', '#9F79EE', '#2E8B57', '#6CA6CD']
 def foo(request):
     return render(request, 'lfm/top100.html')
+
+def PrintEntryDetails(entry):
+  print 'Video title: %s' % entry.media.title.text
+  print 'Video published on: %s ' % entry.published.text
+  print 'Video description: %s' % entry.media.description.text
+  print 'Video category: %s' % entry.media.category[0].text
+  print 'Video tags: %s' % entry.media.keywords.text
+  print 'Video watch page: %s' % entry.media.player.url
+  print 'Video flash player URL: %s' % entry.GetSwfUrl()
+  print 'Video duration: %s' % entry.media.duration.seconds
+
+  # non entry.media attributes
+  # print 'Video geo location: %s' % entry.geo.location()
+  print 'Video view count: %s' % entry.statistics.view_count
+  print 'Video rating: %s' % entry.rating.average
+  
+  print '================================================'
+  print
+  # show alternate formats
+  for alternate_format in entry.media.content:
+    if 'isDefault' not in alternate_format.extension_attributes:
+      print 'Alternate format: %s | url: %s ' % (alternate_format.type,
+                                                 alternate_format.url)
+
+  # show thumbnails
+  for thumbnail in entry.media.thumbnail:
+    print 'Thumbnail url: %s' % thumbnail.url
+
+def PrintVideoFeed(feed):
+  for entry in feed.entry:
+    PrintEntryDetails(entry)
+    
+def youtube(request, id):
+    try:
+        query = gdata.youtube.service.YouTubeVideoQuery()
+        track = Track.objects.get(id=id)
+        query.vq = '%s - %s'%(track.name, track.artist.name)
+        query.orderby = 'relevance'
+        query.racy = 'include'
+        feed = SERVICE.YouTubeQuery(query)
+        video_id = feed.entry[0].id.text.rsplit('/')[-1]
+        return HttpResponse(video_id)
+    except Exception, e:
+        print e
+        return HttpResponse('error')
     
 def get_top100(request):
     username = request.GET.get('username')
@@ -49,6 +100,7 @@ def get_top100(request):
                         'duration':track_dict.get('sum_duration'), 
                         'playcount':track_dict.get('sum_playcount'),
                         'listens': [{'user':listen.user_profile.lfm_username, 'playcount':listen.personal_playcount} for listen in track_dict.get('listens')],
+                        'id': track_dict.get('id'),
                         })
             tracks.sort(key=lambda x:x.get('duration'), reverse=True)
             artist_dict['tracks'] = tracks
@@ -115,7 +167,11 @@ def helper(username, friends=True):
         artist_hash[k]['listeners'].sort(key=lambda x:x.get('listening_duration'), reverse=True)
         tracks = list(set([listen.track.name for listen in artist_hash[k].get('listens')]))
         for track in tracks:
-            artist_hash[k]['tracks'][track] = {'listens':[], 'sum_duration':0, 'sum_playcount':0}
+            artist_hash[k]['tracks'][track] = {'listens':[], 'sum_duration':0, 'sum_playcount':0, 'id': None}
+            try:
+                artist_hash[k]['tracks'][track]['id'] = Track.objects.get(name=track).id
+            except Exception, e:
+                print e
         for listen in artist_hash[k].get('listens'):
             artist_hash[k]['tracks'][listen.track.name]['listens'].append(listen)
             artist_hash[k]['tracks'][listen.track.name]['sum_playcount']+=listen.personal_playcount
