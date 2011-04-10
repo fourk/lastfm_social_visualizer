@@ -83,6 +83,7 @@ label{
 
 }
 #toplist-container{
+    height: 100%;
 /*    padding-top: 5px;
     height: 550px;
     overflow-y: hidden;
@@ -130,17 +131,27 @@ label{
 }
 .artist-name{
     text-align: center;
+    color: #000306;
+}
+.artist-name-tab{
     border: 3px solid #62BECB;
     width: 200px;
     border-radius: 10px 10px 0 0;
     -moz-border-radius: 10px 10px 0 0;
     background-color: #62BECB;
-    color: #000306;
     left: 45px;
     position: relative;
 }
 .toplist-item{
     clear: both;
+}
+.palette-all{
+    background: url('/site_media/rainbow.png');
+    width: 100%;
+    height: 100%;
+}
+.checked{
+    background: url('/site_media/checkmark.png');
 }
 .rank-num{
     width: 45px;
@@ -157,8 +168,17 @@ label{
     margin-bottom: 10px;
 }
 .user-div{
+    cursor: pointer;
     float: left;
     height: 100%;
+}
+.clickable{
+    cursor: pointer;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -o-user-select: none;
+    user-select: none;
 }
 .username{
     position: relative;
@@ -192,10 +212,7 @@ label{
     background-color: lime;
 }
 .selected{
-    height: 32px;
-    background-color: blue;
-    border: 4px solid black;
-    box-shadow: 4px 4px 8px white;
+    background: url('/site_media/select.png');
 }
 #nav-btns{
     float: right;
@@ -282,7 +299,7 @@ body {
   font:normal 22px Helvetica, Arial, Verdana, Tahoma, sans-serif;
   margin-bottom: 5px;
 }
-html {height: 100%;}
+html {height: 100%; overflow-y: scroll;}
 /*
     
     margin:0px auto;

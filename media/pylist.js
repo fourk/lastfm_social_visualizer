@@ -5,7 +5,8 @@ var users;
 var userList;
 var scrollIndex = 0;
 var scrollCounter = 0;
-var scrollTime = new Date().getTime();
+var maxElements = 100;
+
 $(document).ready(function(){
     $('#username-form').submit(function(e){
         $('.username-entry').slideUp('slow');
@@ -45,7 +46,7 @@ function add_to_dom(){
         }
         var bar = topList.find('.artist-bar');
         for (var j=0; j<lfmData[i].listeners.length; j++){
-            bar.append('<div class="user-div"><span class="username"></span></div>');
+            bar.append('<div class="user-div clickable"><span class="username"></span></div>');
             bar.children().last().data('index', i);
         };
         bar.after('<div class="clear" />');
@@ -67,6 +68,7 @@ function onYouTubePlayerAPIReady(){
             $('#player').empty();
             $('#toplist-container').slideDown('fast');
         });
+        $('#youtube-maximize').css('left','10px')
     });
     $('#youtube-minimize').click(function(){
         $('#youtube-container').slideUp('fast');
@@ -99,11 +101,9 @@ function onPlayerReady(event){
     event.target.playVideo();
 }
 
-var done = false;
 function onPlayerStateChange(event){
     if (event.data == YT.PlayerState.PLAYING && !done){
-        setTimeout(stopVideo, 6000);
-        done = true;
+        
     }
 }
 function stopVideo(){
@@ -112,11 +112,34 @@ function stopVideo(){
 
 function setup_user_palette(){
     for (var i=0; i<userList.length; i++){
-        $('#user-palette').append('<div class="user-color"></div>');
+        $('#user-palette').append('<div class="user-color clickable"></div>');
         $('#user-palette').children().last().css('background-color', users[userList[i]]);
+        $('#user-palette').children().last().data('id', i);
     }
-    
+    function colorFilter(){
+        $('.checked').removeClass('checked');
+        $(this).addClass('checked');
+        if ($(this).data('id') === undefined){
+            $('.toplist-item').removeClass('hidden');
+            $('.toplist-item').addClass('shown');
+            $('.toplist-item').slideDown('fast');
+        }
+        else{
+            var user_name = userList[$(this).data('id')];
+            $('.toplist-item').slideUp('fast');
+            $('.toplist-item').removeClass('hidden');
+            $('.toplist-item').removeClass('shown');
+            var elements = $('span:contains('+user_name+')').closest('.toplist-item');
+            elements.addClass('shown');
+            elements.slideDown('fast');
+            scale_user_divs();
+        }
+    };
+    $('.user-color').click(colorFilter);
 };
+/* ====================================================================================================== */
+/*                                          SCROLLING RELATED SHIT                                        */
+/* ====================================================================================================== */
 function hookEvent(element, eventName, callback)
 {
   if(typeof(element) == "string")
@@ -174,7 +197,6 @@ function printInfo(e)
     e = e ? e : window.event;
     var raw = e.detail ? e.detail : e.wheelDelta;
     var normal = e.detail ? e.detail * -1 : e.wheelDelta / 40;
-    document.getElementById('displayInfo').innerHTML = "&nbsp;Raw Value: " + raw + "&nbsp;Normalized Value: " + normal;
     var target;
     if (Math.abs(scrollCounter+normal) < 100){
         scrollCounter+=normal;
@@ -199,60 +221,57 @@ function printInfo(e)
     while(Math.abs(scrollCounter) > 5){
         doScroll();
     }
-    scrollTime = new Date().getTime();
-    // if (normal>0){
-    //     target = $('#nav-up');
-    // }
-    // else{
-    //     target = $('#nav-down');
-    // }
-    // console.log(target);
-    // target.click();
-    // if (Math.abs(normal) > 15){
-    //     target.click();
-    // }
-    // if (Math.abs(normal) > 50){
-    //     target.click();
-    // }
     cancelEvent(e);
 }
 function setup_nav_buttons(){
     $('#nav-top').click(function(){
+        $('.toplist-item').removeClass('hidden');
+        $('.toplist-item').addClass('shown');
         $('.toplist-item').slideDown('fast');
         scale_user_divs();
     });
     $('#nav-up').click(function(){
-        
-        
-        if (scrollIndex > 0){
-            scrollIndex--;
-        }
-        $('.toplist-item:eq('+scrollIndex+')').slideDown('fast');
+        var elem = $('.hidden').last();
+        elem.removeClass('hidden');
+        elem.addClass('shown');
+        elem.slideDown('fast');
         scale_user_divs();
         //$('.toplist-item:hidden').last().slideDown(100);
     });
     $('#nav-down').click(function(){
-        $('.toplist-item:eq('+scrollIndex+')').slideUp('fast');
-        if (scrollIndex < 92){
-            scrollIndex++;
+        var shown = $('.shown')
+        if (shown.length > 1){
+            var elem = shown.first();
+            elem.addClass('hidden');
+            elem.removeClass('shown');
+            elem.slideUp('fast');
+            scale_user_divs();
         }
-        scale_user_divs();
         //$('.toplist-item:visible').first().slideUp(100);
     });
     $('#nav-bot').click(function(){
+        $('.toplist-item:lt(93)').addClass('hidden');
         $('.toplist-item:lt(93)').slideUp('fast');
         scale_user_divs();
     });
 }
 function scale_user_divs(){
-    var scrollStart = scrollIndex;
+    var scrollStart = parseInt($('.shown').first().attr('id').split('toplist')[1])
     var scrollTo = Math.min(100,scrollStart+10);
-    
-    for (var i=scrollStart; i< scrollTo; i++){
-        var pct = lfmData[i].sum_duration / lfmData[scrollStart].sum_duration * 92.5 //this means that the calculated width of the first item is 885.
-        $('#toplist'+String(i)).find('.artist-bar').css('width', pct+'%');
+    var elems = $('.shown');
+    for (var i=0; i< Math.min(elems.length, 10); i++){
+        var index = parseInt($($('.shown')[i]).attr('id').split('toplist')[1]);
+        var pct = lfmData[index].sum_duration / lfmData[scrollStart].sum_duration * 92.5; //this means that the calculated width of the first item is 885.
+        var artist_bar = $('#toplist'+String(index)).find('.artist-bar');
+        artist_bar.stop();
+        artist_bar.animate({width: pct+'%'}, 'fast');
     }
 }
+/* ====================================================================================================== */
+/*                                     /END SCROLLING RELATED SHIT                                        */
+/* ====================================================================================================== */
+
+
 function trackClick(){
     if ($(this).data('id') === ''){
         alert('fuck, man. no youtube video available.');
