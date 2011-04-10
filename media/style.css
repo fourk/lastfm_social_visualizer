@@ -17,7 +17,7 @@
     width: 1050px;
     text-align: center;
     margin: auto;
-    background-color: #0E4E5A;
+    background-color: #95A4AA;
     padding: 30px 10px 30px 20px;
     border:3px solid #000306;
     border-radius: 5px;
@@ -94,7 +94,9 @@ label{
     padding-top: 5px;
     height: 550px;
     overflow-y: hidden;
-    background-color: #000306;
+    background-color: white;
+    border: 2px solid black;
+    box-shadow: -2px -2px 5px black;
 }
 #youtube-container{
     height: 100%;
@@ -134,11 +136,11 @@ label{
     color: #000306;
 }
 .artist-name-tab{
-    border: 3px solid #62BECB;
+    border: 3px solid #95A4AA;
     width: 200px;
     border-radius: 10px 10px 0 0;
     -moz-border-radius: 10px 10px 0 0;
-    background-color: #62BECB;
+    background-color: white;
     left: 45px;
     position: relative;
 }
@@ -164,8 +166,9 @@ label{
     width: 885px;
     float: left;
     height: 40px;
-    border: 2px solid #62BECB;
+    border: 2px solid black;
     margin-bottom: 10px;
+    box-shadow: 2px 2px 5px black;
 }
 .user-div{
     cursor: pointer;
@@ -221,9 +224,10 @@ label{
 .nav-btn{
     height: 50px;
     width: 50px;
-    background-color: #AE76F0;
+    background-color: white;
     border: 3px solid black;
     margin: 62px 0 15px 5px;
+    box-shadow: 2px 3px 25px white;
 }
 .playlist{
     min-height: 68px;

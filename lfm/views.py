@@ -126,7 +126,7 @@ def playlist_list(request):
 def youtube(request, id):
     try:
         track = Track.objects.select_related('image', 'artist').filter(id=id)[0]
-        
+        video_id = get_video_id(track)
         return HttpResponse(json.dumps({'status':'ok', 'videoId': video_id, 'image': get_image(track), 'displayStr': track.name + ' - '+track.artist.name, 'id':track.id}))
     except Exception, e:
         print e

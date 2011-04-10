@@ -44,6 +44,7 @@ function setup_playlist_stuff(){
         $('#youtube-minimize').click();
         $('.playlist-form-contents').hide();
         $('#playlist-form').show();
+        $('.playlist-form-list').show()
         if (savedPlaylists === undefined){
             $('#loading-icon').show();
             $.ajax({
@@ -162,6 +163,10 @@ function addToPlaylist(track){
             events: {
                 'onReady': onPlayerReady,
                 'onStateChange': onPlayerStateChange
+            },
+            playerVars: {
+                enablejsapi: 1,
+                origin: "http://127.0.0.1:8000/"
             }
         });
     }
