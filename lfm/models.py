@@ -91,6 +91,11 @@ class UserTrack(AbstractContent):
     location = models.CharField(max_length=50,blank=True,null=True)
     personal_playcount = models.IntegerField(max_length=5)
     
+class Playlist(AbstractContent):
+    tracks = models.ManyToManyField('Track')
+    name = models.CharField(max_length=255)
+    ordering = models.CommaSeparatedIntegerField(max_length=500)
+    
 class UserProfile(AbstractContent):
     tracks = models.ManyToManyField(Track, through="UserTrack")
     lfm_username = models.CharField(max_length=36, unique=True)

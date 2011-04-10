@@ -6,6 +6,7 @@ var userList;
 var scrollIndex = 0;
 var scrollCounter = 0;
 var maxElements = 100;
+var savedPlaylists;
 
 $(document).ready(function(){
     $('#username-form').submit(function(e){
@@ -27,6 +28,7 @@ $(document).ready(function(){
                 process_user_divs();
                 setup_user_palette();
                 setup_nav_buttons();
+                setup_playlist_stuff();
                 hookEvent('toplist-container', 'mousewheel', printInfo);
             }
         }); 
@@ -34,6 +36,69 @@ $(document).ready(function(){
     });
     $('#username-form').submit();
 });
+function setup_playlist_stuff(){
+    $('#playlist-form-close').click(function(){
+        $('#playlist-form').hide();
+    });
+    $('#playlist-load').click(function(){
+        $('#youtube-minimize').click();
+        $('.playlist-form-contents').hide();
+        $('#playlist-form').show();
+        if (savedPlaylists === undefined){
+            $('#loading-icon').show();
+            $.ajax({
+                url:'/playlists/load/',
+                success: function(data){
+                    $('.playlist-form-list').show();
+                    savedPlaylists = JSON.parse(data).playlists;
+                    $('#loading-icon').hide();
+                    for (var i=0; i<savedPlaylists.length; i++){
+                        $('.playlist-form-list').append('<div class="playlist-list-item clickable"><div class="playlist-name">'+savedPlaylists[i].name+'</div></div>');
+                        $('.playlist-list-item').last().data('tracks', savedPlaylists[i].tracks);
+                    }
+                    $('.playlist-list-item').click(function(){
+                        $('.playlist').append()
+                        var tracks = $(this).data('tracks');
+                        for (var i=0; i<tracks.length; i++){
+                            addToPlaylist(tracks[i]);
+                        }
+                    })
+                }
+            });
+        }
+    });
+    $('#playlist-save').click(function(){
+        $('#youtube-minimize').click();
+        $('.playlist-form-contents').hide();
+        $('#playlist-form').show();
+        $('.playlist-form-form').show();
+    });
+    $('#playlist-save-form').submit(function(e){
+        e.preventDefault();
+        $('#loading-icon').show();
+        var playlistContents = [];
+        $('.playlist-item').each(function(index, val){
+            playlistContents.push($(val).data('id'));
+        });
+        $.ajax({
+            type: 'POST',
+            url: '/playlists/save/',
+            data: {playlist_name: $('#playlist-textbox').val(),
+                playlist: JSON.stringify(playlistContents)},
+            success: function(data){
+                var resp = JSON.parse(data);
+                if(resp.status === 'exists'){
+                    alert('pick a new name, that playlist name is taken already');
+                }
+                else{
+                    $('#playlist-form').hide();
+                }
+                $('#loading-icon').hide();
+            }
+        })
+        
+    })
+}
 function add_to_dom(){
     var len=lfmData.length;
     var container=$('#toplist-container');
@@ -79,22 +144,35 @@ function onYouTubePlayerAPIReady(){
         $('#youtube-maximize').css('left','-125px');
     });
 }
-function youtube(videoID){
+function youtube(resp){
+    var videoID = resp.videoId;
     if (! youtubeReady){
         alert('WAIT IT OUT BRO. Youtube isn\'t ready yet! Or reload if its been a minute.');
         return;
     }
     console.log('made a player, player.');
-    player = new YT.Player('player', {
-        height: '540',
-        width: '800',
-        videoId: videoID,
-        events: {
-            'onReady': onPlayerReady,
-            'onStateChange': onPlayerStateChange
-        }
-    });
+    addToPlaylist(resp);
+}
+function addToPlaylist(track){
+    if (player === undefined){
+        player = new YT.Player('player', {
+            height: '540',
+            width: '800',
+            videoId: track.videoId,
+            events: {
+                'onReady': onPlayerReady,
+                'onStateChange': onPlayerStateChange
+            }
+        });
+    }
+    $('.playlist').append('<div class="playlist-item" title="'+track.displayStr+'"><img src="'+track.image+'"><span class="up64">'+track.displayStr+'</span></div>');
+    $('.playlist-item').last().tooltip({position: 'top center'});
+    $('.playlist-item').last().data('videoId', track.videoId);
+    $('.playlist-item').last().data('id', track.id);
     $('#youtube-maximize').css('left','-125px');
+    if ($('.playlist-item').length === 1){
+        $('.playlist-item').addClass('current-track');
+    }
 }
 function onPlayerReady(event){
     $('#youtube-container').show();
@@ -102,8 +180,22 @@ function onPlayerReady(event){
 }
 
 function onPlayerStateChange(event){
-    if (event.data == YT.PlayerState.PLAYING && !done){
-        
+    console.log(event);
+    /* YT.playerState.
+    BUFFERING: 3
+    CUED: 5
+    ENDED: 0
+    PAUSED: 2
+    PLAYING: 1
+    */
+    if (event.data == YT.PlayerState.ENDED){
+        if ($('.current-track ~ .playlist-item').length > 0){
+            var upcoming = $('.current-track ~ .playlist-item');
+            var next=upcoming.first();
+            $('.current-track').removeClass('current-track');
+            next.addClass('current-track');
+            player.loadVideoById(next.data('videoId'));
+        }
     }
 }
 function stopVideo(){
@@ -113,8 +205,10 @@ function stopVideo(){
 function setup_user_palette(){
     for (var i=0; i<userList.length; i++){
         $('#user-palette').append('<div class="user-color clickable"></div>');
-        $('#user-palette').children().last().css('background-color', users[userList[i]]);
-        $('#user-palette').children().last().data('id', i);
+        var elem = $('#user-palette').children().last();
+        elem.css('background-color', users[userList[i]]);
+        elem.data('id', i);
+        elem.attr('title', userList[i]);
     }
     function colorFilter(){
         $('.checked').removeClass('checked');
@@ -136,6 +230,7 @@ function setup_user_palette(){
         }
     };
     $('.user-color').click(colorFilter);
+    $('.user-color').tooltip({position: "center right"});
 };
 /* ====================================================================================================== */
 /*                                          SCROLLING RELATED SHIT                                        */
@@ -281,9 +376,15 @@ function trackClick(){
         $.ajax({
             url: '/youtube/'+$(this).data('id'),
             success: function(data){
+                var resp = JSON.parse(data);
                 console.log('GOTRESP');
-                console.log(data);
-                youtube(data);
+                console.log(resp);
+                if (resp.status === 'error'){
+                    alert('Sorry! Couldn\'t find that track on Youtube.');
+                }
+                else{
+                    youtube(resp);
+                }
             }
         })
     }

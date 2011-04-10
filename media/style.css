@@ -201,6 +201,7 @@ label{
 .trackname{
     margin-left: 250px;
     text-align: left;
+    cursor: pointer;
     
 }
 .duration-str{
@@ -223,6 +224,61 @@ label{
     background-color: #AE76F0;
     border: 3px solid black;
     margin: 62px 0 15px 5px;
+}
+.playlist{
+    min-height: 68px;
+    background-color: #000306;
+    margin: 0 0 0 30px;
+}
+.playlist-item{
+    float: left;
+    height: 64px;
+    width: 64px;
+    overflow: hidden;
+    border: 2px solid black;
+}
+.up64{
+    position: relative;
+    top: -64px;
+    color: black;
+}
+.current-track{
+    border: 2px solid red;
+}
+#playlist-save{
+    
+}
+#playlist-load{
+    
+}
+#playlist-form{
+    position: fixed;
+    height: 300px;
+    width: 500px;
+    border-radius: 20px;
+    border: 4px solid white;
+    margin-left: 250px;
+    top: 250px;
+    background-color: silver;
+    display: none;
+}
+.playlist-form-header{
+    height: 50px;
+    font-size: 40px;
+    background-color: black;
+    color: white;
+    width: 100%;
+    border-radius: 20px 20px 0 0;
+}
+.playlist-nav{
+    float: right;
+    border: 2px solid white;
+    border-radius: 5px;
+    padding: 5px;
+    margin: 15px 5px; 
+}
+.playlist-container{
+    
 }
 #nav-up{
     background-image: url('/site_media/up.png');
@@ -289,7 +345,11 @@ width: 1000px;
   border-top-right-radius: 1em;
   border-top-left-radius: 1em;
 }
-
+.tooltip {
+	display:none;
+	top: 5px;
+	width: 140px;
+}
 body {
     background-color: #3F4038;
     color: #ffffff;

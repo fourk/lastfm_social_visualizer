@@ -6,6 +6,7 @@
         <link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/3.2.0/build/cssreset/reset-min.css">
         <link href="/site_media/style.css" type="text/css" media="screen" rel="stylesheet">
         <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.4.3/jquery.min.js"></script>
+        <script src="http://cdn.jquerytools.org/1.2.5/tiny/jquery.tools.min.js"></script>
         <script type="text/javascript" src="/site_media/pylist.js"></script>
     </head>
     
@@ -28,7 +29,7 @@
         <div class="maindiv gui">
             <div id="user-palette">
                 <div class="palette-all">
-                    <div class="user-color clickable checked"></div>
+                    <div class="user-color clickable checked" title="All Users"></div>
                 </div>
             </div>
             <div id="nav-btns">
@@ -53,7 +54,32 @@
                     {% endfor %}
                 </div>
             </div>
+            <div class="playlist-container">
+                <div id="playlist-controls">
+                    <div class="playlist-nav clickable" id="playlist-save">Save Playlist</div>
+                    <div class="playlist-nav clickable" id="playlist-load">Load Playlist</div>
+                </div>
+                <div class="clear"></div>
+                <div class="playlist"></div>
+            </div>
             <div class="detailed-hud"></div>
+            <div id="playlist-form">
+                <div class="playlist-form-header">
+                    Playlist
+                    <div class="youtube-nav" id="playlist-form-close">X</div>
+                </div>
+                <div class="playlist-form-list playlist-form-contents">
+                </div>
+                <div class="playlist-form-form playlist-form-contents">
+                    <form id="playlist-save-form">
+                        <div class="error"></div>
+                        <label for="playlist-name">Playlist Name: </label>
+                        <input name="playlist-name" id="playlist-textbox" type="text"></textarea>
+                        <input name="playlist-name" type="submit" value="Save" id="submit-playlist"></input>
+                    </form>
+                </div>
+            </div>
         </div>
+        
     </body>
 </html>

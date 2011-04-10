@@ -4,7 +4,7 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from django.core.cache import cache
 import operator
-from lfm.models import UserProfile, Track
+from lfm.models import UserProfile, Track, Playlist
 
 import gdata.youtube
 import gdata.youtube.service
@@ -26,6 +26,32 @@ COLORS = ['DC143C', 'FFB6C1', '8B5F65', 'EE799F', '9F79EE', '483D8B', '0000FF', 
 COLORS = ['#98FB98', '#00C78C', '#3D59AB', '#BDB76B', '#FFB6C1', '#EE9A00', '#0000FF', '#483D8B', '#DC143C', '#698B22', '#EE799F', '#8B5F65', '#6E6E6E', '#EEC591', '#9F79EE', '#2E8B57', '#6CA6CD']
 def foo(request):
     return render(request, 'lfm/top100.html')
+
+def get_image(track):
+    image = track.image
+    if image is None:
+        image = track.artist.image
+        if image is None:
+            return 'http://cdn.last.fm/flatness/catalogue/noimage/2/default_album_medium.png'
+    url_string = image.url
+    if url_string[:5] == u"{u'#t":
+        url_string = url_string[13:url_string[13:].find("'")+13]
+    if '/34s/' in url_string:
+        url_string = url_string.replace('/34s/', '/64s/')
+    elif 'amazon' in url_string:
+        url_string = url_string.replace('_SCMZZZZZZZ_', '_AA64_')
+        url_string = url_string.replace('MZZZZZZZ', '_AA64_')
+        url_string = url_string.replace('THUMBZZZ', '_AA64_')
+    return url_string
+        
+def get_video_id(track):
+    query = gdata.youtube.service.YouTubeVideoQuery()
+    query.vq = '%s - %s'%(track.name, track.artist.name)
+    query.orderby = 'relevance'
+    query.racy = 'include'
+    feed = SERVICE.YouTubeQuery(query)
+    video_id = feed.entry[0].id.text.rsplit('/')[-1]
+    return video_id
 
 def PrintEntryDetails(entry):
   print 'Video title: %s' % entry.media.title.text
@@ -57,20 +83,54 @@ def PrintEntryDetails(entry):
 def PrintVideoFeed(feed):
   for entry in feed.entry:
     PrintEntryDetails(entry)
+
+def playlist_load(request, id):
+    pass
+    
+def playlist_save(request):
+    track_ids = json.loads(request.POST.get('playlist'))
+    playlist_name = request.POST.get('playlist_name')
+    tracks = Track.objects.filter(id__in=track_ids)
+
+    try:
+        playlist = Playlist.objects.get(name=playlist_name)
+        return HttpResponse(json.dumps({'status':'exists'}))
+    except ObjectDoesNotExist:
+        playlist = Playlist(name=playlist_name)
+        playlist.ordering = str(track_ids)[1:-1]
+        playlist.save()
+    except Exception, e:
+        raise
+    
+    for track in tracks:
+        playlist.tracks.add(track)
+    cache.delete('playlists')
+    return HttpResponse(json.dumps({'status':'ok'}))
+
+def playlist_list(request):
+    resp = cache.get('playlists')
+    if resp is None:    
+        playlists = Playlist.objects.all()
+        resp = {'status':'ok', 'playlists': []}
+        for playlist in playlists:
+            tracks = []
+            all_tracks = playlist.tracks.select_related('artist').all() #this optimizes the sql a little i think
+            for track_id in playlist.ordering.split(', '):
+                track = Track.objects.get(id=int(track_id))
+                tracks.append({'name': track.name, 'artist': track.artist.name, 'image': get_image(track), 'id': track.id, 'displayStr': track.name + ' - '+track.artist.name, 'videoId': get_video_id(track)})
+            resp['playlists'].append({'name':playlist.name, 'tracks':tracks})
+        resp = json.dumps(resp)
+        cache.set('playlists', resp, 60*60*12)
+    return HttpResponse(resp)
     
 def youtube(request, id):
     try:
-        query = gdata.youtube.service.YouTubeVideoQuery()
-        track = Track.objects.get(id=id)
-        query.vq = '%s - %s'%(track.name, track.artist.name)
-        query.orderby = 'relevance'
-        query.racy = 'include'
-        feed = SERVICE.YouTubeQuery(query)
-        video_id = feed.entry[0].id.text.rsplit('/')[-1]
-        return HttpResponse(video_id)
+        track = Track.objects.select_related('image', 'artist').filter(id=id)[0]
+        
+        return HttpResponse(json.dumps({'status':'ok', 'videoId': video_id, 'image': get_image(track), 'displayStr': track.name + ' - '+track.artist.name, 'id':track.id}))
     except Exception, e:
         print e
-        return HttpResponse('error')
+        return HttpResponse(json.dumps({'status':'error'}))
     
 def get_top100(request):
     username = request.GET.get('username')
@@ -86,7 +146,7 @@ def get_top100(request):
         for user in listeners:
             user_hash[user.lfm_username] = COLORS.pop()
             user_list.append(user.lfm_username)
-    
+        
         for artist_dict in resp:
             for listener_dict in artist_dict.get('listeners'):
                 listener_dict['listens'].sort(key=lambda x:x.track.duration * x.personal_playcount, reverse=True)
