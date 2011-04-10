@@ -23,7 +23,7 @@ def init_service():
     
 #17 color support.
 COLORS = ['DC143C', 'FFB6C1', '8B5F65', 'EE799F', '9F79EE', '483D8B', '0000FF', '3D59AB', '6CA6CD', '00C78C', '2E8B57', '98FB98', '698B22', 'BDB76B', 'EE9A00', 'EEC591', '6E6E6E'] #these are arranged in the order i found them on http://cloford.com/resources/colours/500col.htm
-COLORS = ['#98FB98', '#00C78C', '#3D59AB', '#BDB76B', '#FFB6C1', '#EE9A00', '#0000FF', '#483D8B', '#DC143C', '#698B22', '#EE799F', '#8B5F65', '#6E6E6E', '#EEC591', '#9F79EE', '#2E8B57', '#6CA6CD']
+COLORS = ['#66ff66', '#00C78C', '#333399', '#cccc33', '#ff6666', '#EE9A00', '#0000FF', '#483D8B', '#DC143C', '#698B22', '#66ccff', '#8B5F65', '#6E6E6E', '#EEC591', '#9F79EE', '#009933', '#3399cc']
 def foo(request):
     return render(request, 'lfm/top100.html')
 
