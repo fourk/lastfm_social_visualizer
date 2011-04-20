@@ -13,7 +13,8 @@ urlpatterns = patterns('',
 						(r'^youtube/(?P<id>.*?)/$', 'lfm.views.youtube'),
 						(r'^playlists/load/$', 'lfm.views.playlist_list'),
 						(r'^playlists/load/(?P<id>)$', 'lfm.views.playlist_load'),
-						(r'^playlists/save/$', 'lfm.views.playlist_save')
+						(r'^playlists/save/$', 'lfm.views.playlist_save'),
+                        (r'^node/$', 'lfm.views.node_fwd'),
     # Example:
     # (r'^pylist/', include('pylist.foo.urls')),
 

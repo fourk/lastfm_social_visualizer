@@ -17,6 +17,7 @@ except ImportError:
     import simplejson as json
 
 import urllib2
+
 API = settings.API
 CLIENT = BeanstalkClient()
 DECODER_RING = Unidecoder()
@@ -71,38 +72,42 @@ def process_page(user, resp, week=False):
     
         user.track_pages_loaded = user.track_pages_loaded[:pagecomplete-1]+'1'+user.track_pages_loaded[pagecomplete:]
         user.save()
-    
+    else:
+        pagecomplete = int(resp['toptracks']['@attr']['page'])
+        if pagecomplete == int(resp['toptracks']['@attr']['totalPages']):
+            user.updating_track_week = False
+            user.save()
     return True
     
-def get_track_info_url(track, artist):
-    '''track and artist are strings'''
-    return 'http://ws.audioscrobbler.com/2.0/?method=track.getinfo&api_key=%s&track=%s&artist=%s&format=json'%(API, urllib2.quote(track.encode('utf-8')), urllib2.quote(artist.encode('utf-8')))
-    
-def get_week_url(username, page=1):
-    return 'http://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&period=7day&api_key=%s&user=%s&format=json&page=%s'%(API, username, page)
-    
-def get_url(username, page=1):
-    #library.gettracks
-    url = 'http://ws.audioscrobbler.com/2.0/?method=library.gettracks&api_key=%s&user=%s&format=json&page=%s'%(API, username, page)
-    return url
-    
-def get_friends_url(username, page=1):
-    #user.getfriends
-    return 'http://ws.audioscrobbler.com/2.0/?method=user.getfriends&api_key=%s&user=%s&format=json&page=%s'%(API, username, page)
-
-def get_url_artist_getinfo(artist_name):
-    url = 'http://ws.audioscrobbler.com/2.0/?method=artist.getinfo&api_key=%s&artist=%s&format=json'%(API, urllib2.quote(artist_name.encode('utf-8')))
-    return url
-
-def get_page(username, page=1, week=False):
-    print 'PAGENUMBER',page
-    if week:
-        url = get_week_url(username, page)
-    else:
-        url = get_url(username, page)
-    
-    reply = urllib2.urlopen(url)
-    return json.loads(reply.read())
+# def get_track_info_url(track, artist):
+#     '''track and artist are strings'''
+#     return 'http://ws.audioscrobbler.com/2.0/?method=track.getinfo&api_key=%s&track=%s&artist=%s&format=json'%(API, urllib2.quote(track.encode('utf-8')), urllib2.quote(artist.encode('utf-8')))
+#     
+# def get_week_url(username, page=1):
+#     return 'http://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&period=7day&api_key=%s&user=%s&format=json&page=%s'%(API, username, page)
+#     
+# def get_url(username, page=1):
+#     #library.gettracks
+#     url = 'http://ws.audioscrobbler.com/2.0/?method=library.gettracks&api_key=%s&user=%s&format=json&page=%s'%(API, username, page)
+#     return url
+#     
+# def get_friends_url(username, page=1):
+#     #user.getfriends
+#     return 'http://ws.audioscrobbler.com/2.0/?method=user.getfriends&api_key=%s&user=%s&format=json&page=%s'%(API, username, page)
+# 
+# def get_url_artist_getinfo(artist_name):
+#     url = 'http://ws.audioscrobbler.com/2.0/?method=artist.getinfo&api_key=%s&artist=%s&format=json'%(API, urllib2.quote(artist_name.encode('utf-8')))
+#     return url
+# 
+# def get_page(username, page=1, week=False):
+#     print 'PAGENUMBER',page
+#     if week:
+#         url = get_week_url(username, page)
+#     else:
+#         url = get_url(username, page)
+#     
+#     reply = urllib2.urlopen(url)
+#     return json.loads(reply.read())
 
 def make_track(user, track, week=False):
     '''user is a UserProfile object,
@@ -130,7 +135,6 @@ def make_track(user, track, week=False):
     try:
         print track.get('name'),'|',
     except Exception, e:
-        from ipdb import set_trace;set_trace()
         print 'error printing track.get("name")!'
         try:
             print e
@@ -258,7 +262,8 @@ def get_friends_data(user):
     '''user is a UserProfile object'''
     print 'Getting friend data for %s'%user
     for friend in user.friends.all():
-        get_for_user(friend.lfm_username, week=True)
+        job_data = {'username':user.lfm_username}
+        CLIENT.call('lfm.get_user_track_week', json.dumps(job_data))
     
     
 def process_friend_page(user, resp):
@@ -318,8 +323,9 @@ def get_friends_page(user, page=1):
     total_pages = int(resp.get('friends').get('@attr').get('totalPages'))
     if page == 1:
         for page in range(2,total_pages+1):
-            job_data = {'uname':user.lfm_username, 'page':page}
-            CLIENT.call('lfm.process_friends_page', json.dumps(job_data))
+            pass
+            # job_data = {'uname':user.lfm_username, 'page':page}
+            #             CLIENT.call('lfm.process_friends_page', json.dumps(job_data))
     process_friend_page(user, resp)
     
 def process_track_info(resp):

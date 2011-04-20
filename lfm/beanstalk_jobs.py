@@ -4,10 +4,11 @@ Created on Dec 5, 2010
 @author: jburkhart
 '''
 from django_beanstalkd import beanstalk_job
-from lfm.data_proc import process_page, get_page, get_friends_page, process_friend_page, get_track_infos, process_track_info
+from lfm.data_proc import process_page, get_page, get_friends_page, process_friend_page, get_track_infos, process_track_info, get_for_user
 from lfm.models import UserProfile, Track
+from django.db import reset_queries, close_connection
 import urllib2
-
+import datetime
 try:
     import json
 except ImportError:
@@ -77,3 +78,28 @@ def get_track_info(in_str):
     artist_name = data.get('artist_name')
     resp = get_track_infos(track_name, artist_name)
     process_track_info(resp)
+    
+@beanstalk_job
+def get_user_track_week(in_str):
+    '''
+    in_str is a json serialized object of the following format:
+    {
+        'username':string
+    }
+    '''
+    data = json.loads(in_str)
+    username = data.get('username')
+    reset_queries()
+    close_connection()
+    user = UserProfile.objects.get(lfm_username=username)
+    if user.updating_track_week == True:
+        print 'Already updating get_user_track_week'
+        return
+    elif datetime.datetime.now() - user.tracks_week_updated_at < datetime.timedelta(7):
+        print 'Updated this user too recently'
+        return
+        
+    user.updating_track_week = True
+    user.save()
+    get_for_user(username, week=True)
+    

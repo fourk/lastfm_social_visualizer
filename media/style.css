@@ -26,6 +26,7 @@
     -moz-box-shadow: 3px 3px 4px #1c140d;
 }
 .gui{
+    margin-bottom: 20px;
 }
 .detailed-hud{
     padding-top: 5px;
@@ -94,7 +95,7 @@ label{
     padding-top: 5px;
     height: 550px;
     overflow-y: hidden;
-    background-color: white;
+    background-color: #F0F0F0;
     border: 2px solid black;
     box-shadow: -2px -2px 5px black;
 }
@@ -159,6 +160,7 @@ label{
     width: 45px;
     text-align: center;
     float: left;
+    color: black;
 }
 .artist-bar{
     overflow-x: hidden;
@@ -186,6 +188,9 @@ label{
 .username{
     position: relative;
     top: 11px;
+}
+.detail:nth-child(2n){
+    background-color: #1F1F0F;
 }
 #user-palette{
     float: left;
@@ -218,6 +223,7 @@ label{
 .selected{
     background: url('/site_media/select.png');
 }
+
 #nav-btns{
     float: right;
 }

@@ -1,5 +1,6 @@
 var youtubeReady = false;
 //var videoID = 'Z19zFlPah-o';
+var ws;
 var lfmData;
 var users;
 var userList;
@@ -30,12 +31,31 @@ $(document).ready(function(){
                 setup_nav_buttons();
                 setup_playlist_stuff();
                 hookEvent('toplist-container', 'mousewheel', printInfo);
+                setup_websockets();
             }
         }); 
         return false;
     });
     $('#username-form').submit();
 });
+function setup_websockets(){
+    ws = new io.Socket('127.0.0.1', {port: 8124});
+    ws.connect();
+    ws.on('connect', function(){
+        console.log('connected');
+    });
+    ws.on('message', function(msg){
+        console.log('START MESSAGE');
+        console.log(msg);
+        console.log('END MESSAGE');
+        if(msg.videoId){
+            addToPlaylist(msg);
+        }
+    });
+    ws.on('disconnect', function(){
+        console.log('disconnected');
+    });
+}
 function setup_playlist_stuff(){
     $('#playlist-form-close').click(function(){
         $('#playlist-form').hide();
@@ -146,13 +166,10 @@ function onYouTubePlayerAPIReady(){
     });
 }
 function youtube(resp){
-    var videoID = resp.videoId;
     if (! youtubeReady){
         alert('WAIT IT OUT BRO. Youtube isn\'t ready yet! Or reload if its been a minute.');
         return;
     }
-    console.log('made a player, player.');
-    addToPlaylist(resp);
 }
 function addToPlaylist(track){
     if (player === undefined){
@@ -387,9 +404,9 @@ function trackClick(){
                 if (resp.status === 'error'){
                     alert('Sorry! Couldn\'t find that track on Youtube.');
                 }
-                else{
-                    youtube(resp);
-                }
+                //else{
+                //    youtube(resp);
+                //}
             }
         })
     }

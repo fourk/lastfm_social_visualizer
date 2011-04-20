@@ -5,6 +5,11 @@ from django.http import HttpResponse
 from django.core.cache import cache
 import operator
 from lfm.models import UserProfile, Track, Playlist
+from django_beanstalkd import BeanstalkClient
+import urllib
+from celery.execute import send_task
+
+import pika
 
 import gdata.youtube
 import gdata.youtube.service
@@ -13,8 +18,10 @@ try:
 	import json
 except ImportError:
 	import simplejson as json
-	
+
+CLIENT = BeanstalkClient()	
 SERVICE = gdata.youtube.service.YouTubeService()
+
 
 def init_service():
     global SERVICE
@@ -24,6 +31,11 @@ def init_service():
 #17 color support.
 COLORS = ['DC143C', 'FFB6C1', '8B5F65', 'EE799F', '9F79EE', '483D8B', '0000FF', '3D59AB', '6CA6CD', '00C78C', '2E8B57', '98FB98', '698B22', 'BDB76B', 'EE9A00', 'EEC591', '6E6E6E'] #these are arranged in the order i found them on http://cloford.com/resources/colours/500col.htm
 COLORS = ['#66ff66', '#00C78C', '#333399', '#cccc33', '#ff6666', '#EE9A00', '#0000FF', '#483D8B', '#DC143C', '#698B22', '#66ccff', '#8B5F65', '#6E6E6E', '#EEC591', '#9F79EE', '#009933', '#3399cc']
+def node_fwd(request):
+    resp = urllib.urlopen('http://127.0.0.1:8124')
+    retval = resp.read()
+    return HttpResponse(retval)
+
 def foo(request):
     return render(request, 'lfm/top100.html')
 
@@ -125,18 +137,53 @@ def playlist_list(request):
     
 def youtube(request, id):
     try:
+        # from ipdb import set_trace;set_trace()
+        
         track = Track.objects.select_related('image', 'artist').filter(id=id)[0]
         video_id = get_video_id(track)
-        return HttpResponse(json.dumps({'status':'ok', 'videoId': video_id, 'image': get_image(track), 'displayStr': track.name + ' - '+track.artist.name, 'id':track.id}))
+        connection = pika.AsyncoreConnection(pika.ConnectionParameters(host='ec2-50-18-18-186.us-west-1.compute.amazonaws.com',
+                        credentials=pika.PlainCredentials('guest', 'n0td3f4ult')))
+        channel = connection.channel()
+        channel.queue_declare(queue='testq2', auto_delete=True, durable=False, exclusive=False)
+        track_data = json.dumps({'status':'ok', 'videoId': video_id, 'image': get_image(track), 'displayStr': track.name + ' - '+track.artist.name, 'id':track.id})
+        channel.basic_publish(exchange='',
+                routing_key='testq2',
+                body=track_data,
+                properties=pika.BasicProperties(content_type='application/json'),
+        )
+        connection.close()
+        return HttpResponse(track_data)
+        
     except Exception, e:
         print e
         return HttpResponse(json.dumps({'status':'error'}))
     
 def get_top100(request):
-    username = request.GET.get('username')
     retval = None
-    retval = cache.get('testing')
 
+    username = request.GET.get('username')
+    try:
+        user = UserProfile.objects.get(lfm_username=username)
+    except ObjectDoesNotExist:
+        user = UserProfile(lfm_username=username)
+        user.updating_track_week = True
+        user.save()
+        return HttpResponse('sorry, loading, come back in 5m')
+        # send_task()
+    # if user.updating_track_week:
+    #     retval = json.dumps({'status':'wait'})
+    #     
+    # elif user.updated_friends_at is None:
+    #     job_data = {'uname': username, 'page': 1}
+    #     CLIENT.call('lfm.process_friends_page', json.dumps(job_data))
+    #     
+    # if user.tracks_week_updated_at == None or datetime.datetime.now() - user.tracks_week_updated_at > datetime.timedelta(7):
+    #     job_data = {'username': username}
+    #     CLIENT.call('lfm.get_user_track_week', json.dumps(job_data))
+    #     
+    #     
+    retval = cache.get('testing')
+    # 
     if retval is None:
         (resp,listeners) = helper(username)
     
@@ -146,13 +193,13 @@ def get_top100(request):
         for user in listeners:
             user_hash[user.lfm_username] = COLORS.pop()
             user_list.append(user.lfm_username)
-        
+
         for artist_dict in resp:
             for listener_dict in artist_dict.get('listeners'):
                 listener_dict['listens'].sort(key=lambda x:x.track.duration * x.personal_playcount, reverse=True)
                 listener_dict['listens'] = [{'name': k.track.name, 
                             'playcount': k.personal_playcount, 
-                            'duration': k.track.duration * k.personal_playcount / 1000,
+                            'duration': k.track.duration * k.personal_playcount,
                             'id': k.track.id,
                             } for k in listener_dict['listens']]
                 listener_dict['user'] = listener_dict['user'].lfm_username
@@ -169,7 +216,7 @@ def get_top100(request):
             tracks.sort(key=lambda x:x.get('duration'), reverse=True)
             artist_dict['tracks'] = tracks
             artist_dict['listens'] = []
-    
+
         retval = json.dumps({'lfmData':resp, 'userHash':user_hash, 'userList':user_list})
         cache.set('testing', retval, 60*60*4)
 
@@ -207,7 +254,7 @@ def helper(username, friends=True):
     for listen in listens:
         if listen.track.artist:
             artist_hash[listen.track.artist.name]['listens'].append(listen)#TODO
-            artist_hash[listen.track.artist.name]['sum_duration'] += listen.track.duration/1000 * listen.personal_playcount
+            artist_hash[listen.track.artist.name]['sum_duration'] += listen.track.duration * listen.personal_playcount
             if artist_hash[listen.track.artist.name]['artist_img'] == '' and listen.track.artist.image:
                 artist_hash[listen.track.artist.name]['artist_img'] = listen.track.artist.image.url;
                 #i think this code is both terrible and broken.
@@ -226,20 +273,20 @@ def helper(username, friends=True):
             artist_hash[k]['listeners'].append({
                     'user': listener,
                     'listens': user_listens,
-                    'listening_duration': sum([listen.track.duration for listen in user_listens])/1000
+                    'listening_duration': sum([listen.track.duration for listen in user_listens])
                     })
         artist_hash[k]['listeners'].sort(key=lambda x:x.get('listening_duration'), reverse=True)
         tracks = list(set([listen.track.name for listen in artist_hash[k].get('listens')]))
         for track in tracks:
             artist_hash[k]['tracks'][track] = {'listens':[], 'sum_duration':0, 'sum_playcount':0, 'id': None}
             try:
-                artist_hash[k]['tracks'][track]['id'] = Track.objects.get(name=track).id
+                artist_hash[k]['tracks'][track]['id'] = Track.objects.get(name=track,artist__name=k).id
             except Exception, e:
                 print e
         for listen in artist_hash[k].get('listens'):
             artist_hash[k]['tracks'][listen.track.name]['listens'].append(listen)
             artist_hash[k]['tracks'][listen.track.name]['sum_playcount']+=listen.personal_playcount
-            artist_hash[k]['tracks'][listen.track.name]['sum_duration']+= listen.personal_playcount * listen.track.duration /1000
+            artist_hash[k]['tracks'][listen.track.name]['sum_duration']+= listen.personal_playcount * listen.track.duration
         ls.append(artist_hash[k])
 
     ls.sort(key=operator.itemgetter('sum_duration'), reverse=True)

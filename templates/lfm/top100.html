@@ -8,13 +8,14 @@
         <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.4.3/jquery.min.js"></script>
         <script src="http://cdn.jquerytools.org/1.2.5/tiny/jquery.tools.min.js"></script>
         <script type="text/javascript" src="/site_media/pylist.js"></script>
+        <script type="text/javascript" src="/site_media/socket.io.min.js"></script>
     </head>
     
     <body>
         <div class="header">
-            <span>Sup. This is the header.</span>
+           <!-- <span>Sup. This is the header.</span>
             <span>Top 100</span>
-            <div id="displayInfo"></div>
+            <div id="displayInfo"></div> !-->
         </div>
         <div class="spacer"></div>
         <div class="maindiv username-entry">
@@ -58,6 +59,8 @@
                 <div id="playlist-controls">
                     <div class="playlist-nav clickable" id="playlist-save">Save Playlist</div>
                     <div class="playlist-nav clickable" id="playlist-load">Load Playlist</div>
+                    <div class="playlist-nav clickable" id="playlist-personal">Personal Playlist</div>
+                    <div class="playlist-nav clickable" id="playlist-shared">Shared Playlist</div>
                 </div>
                 <div class="clear"></div>
                 <div class="playlist"></div>
@@ -80,6 +83,6 @@
                 </div>
             </div>
         </div>
-        
+        <div class="footer">.</div>
     </body>
 </html>

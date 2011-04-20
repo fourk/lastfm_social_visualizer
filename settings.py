@@ -1,19 +1,19 @@
 # Django settings for pylist project.
 import os.path
+import djcelery
+djcelery.setup_loader()
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 def deprint(s):
-	if DEBUG:
-		print s
-		
+    if DEBUG:
+        print s
 API = 'a9785e0b1bb8deb9eb4e090b3aba9613'
 HOME = '/Users/jamesburkhart/work/fourk'
 
 ADMINS = (
-	('James Burkhart', 'jburkhart@gm.slc.edu'),
-    # ('Your Name', 'your_email@domain.com'),
+    ('James Burkhart', 'jburkhart@gm.slc.edu'),
 )
 
 MANAGERS = ADMINS
@@ -21,7 +21,7 @@ MANAGERS = ADMINS
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': 'pylist',                      # Or path to database file if using sqlite3.
+        'NAME': 'pylist5',                      # Or path to database file if using sqlite3.
         'USER': 'root',                      # Not used with sqlite3.
         'PASSWORD': '',                  # Not used with sqlite3.
         'HOST': '127.0.0.1',                      # Set to empty string for localhost. Not used with sqlite3.
@@ -89,7 +89,7 @@ PID_DIRECTORY = os.path.join(HOME,'pids')
 ROOT_URLCONF = 'fourk.urls'
 
 TEMPLATE_DIRS = (
-	os.path.join(HOME, 'templates').replace('\\','/'),
+    os.path.join(HOME, 'templates').replace('\\','/'),
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
@@ -105,6 +105,7 @@ INSTALLED_APPS = (
     'lfm',
     'south',
     'django_beanstalkd',
+    'djcelery',
 )
 
 INTERNAL_IPS = ('127.0.0.1',)
@@ -115,6 +116,17 @@ CACHES = {
         'LOCATION': '127.0.0.1:11211',
     }
 }
+
+#CELERY STUFF
+CELERY_RESULT_BACKEND = 'amqp'
+BROKER_HOST = 'localhost'
+#BROKER_HOST = 'ec2-50-18-18-186.us-west-1.compute.amazonaws.com'
+BROKER_PORT = 5672
+BROKER_USER = 'guest'
+#BROKER_PASSWORD = 'n0td3f4ult'
+BROKER_PASSWORD = 'guest'
+BROKER_VHOST = '/'
+
 try:
 # settings_mine overrides all other settings.
 	from django_settings_mine import *
