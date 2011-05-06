@@ -6,12 +6,14 @@ var connection = amqp.createConnection({host: 'ec2-50-18-18-186.us-west-1.comput
 var clients = [];
 //var connection = amqp.createConnection({host: '127.0.0.1'});
 var server = http.createServer(function(request, response){
+    console.log(sys.inspect(request));
     response.writeHead(200, {'Content-Type': 'text/plain'});
     response.end('Hello World\n');
 });
 server.listen(8124);
 var socket = io.listen(server);
 socket.on('connection', function(client){
+    console.log(sys.inspect(client));
     client.on('message', function(){
         console.log('got message');
     });
