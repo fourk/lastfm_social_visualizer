@@ -215,8 +215,8 @@ class UserProfile(AbstractContent):
     def update_trackweek(self):
         print 'INSIDE UPDATE_TRACKWEEK'
         if self.updating_track_week:
-            print 'WARNING: %s is already updating their trackweek. Failure'%self
-            return False
+            print 'WARNING: %s is already updating their trackweek. This MAY be an error?'%self
+            # return False
         elif self.tracks_week_updated_at == None or datetime.datetime.now() - self.tracks_week_updated_at > datetime.timedelta(7):
             print 'Changing updating_track_week for %s'%self
             self.updating_track_week = True
@@ -292,6 +292,7 @@ def userprofile_postsave(*args, **kwargs):
         instance.update_trackweek()
         instance.get_addtl_info()
         
+
 @receiver(post_save, sender=Track, dispatch_uid='track_postsave')
 def track_postsave(*args, **kwargs):
     if kwargs.get('created'):

@@ -18,25 +18,32 @@ $(document).ready(function(){
         $.ajax({
             type: "GET",
             url: "/user",
-            data: "username="+"havok07",//$('#username-textbox').val(),
+            data: "username="+$('#username-textbox').val(),
             success: function(data){
                 console.log('ajax success');
                 var allData = JSON.parse(data);
-                lfmData = allData.lfmData;
-                users = allData.userHash;
-                userList = allData.userList;
-                add_to_dom();
-                process_user_divs();
-                setup_user_palette();
-                setup_nav_buttons();
-                setup_playlist_stuff();
-                hookEvent('toplist-container', 'mousewheel', printInfo);
-                setup_websockets();
+                if (allData.msg !== undefined) {
+                    alert(allData.msg);
+                    console.log('getting data for user');
+                    console.log(allData.msg);
+                }
+                else {
+                    lfmData = allData.lfmData;
+                    users = allData.userHash;
+                    userList = allData.userList;
+                    add_to_dom();
+                    process_user_divs();
+                    setup_user_palette();
+                    setup_nav_buttons();
+                    setup_playlist_stuff();
+                    hookEvent('toplist-container', 'mousewheel', printInfo);
+                    // setup_websockets();
+                }
             }
         }); 
         return false;
     });
-    $('#username-form').submit();
+    // $('#username-form').submit();
 });
 function setup_websockets(){
     ws = new io.Socket('127.0.0.1', {port: 8124});
@@ -117,7 +124,6 @@ function setup_playlist_stuff(){
                 $('#loading-icon').hide();
             }
         })
-        
     })
 }
 function add_to_dom(){
@@ -148,6 +154,7 @@ firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
 var player;
 function onYouTubePlayerAPIReady(){
+    console.log('youtube ready');
     youtubeReady = true;
     $('#youtube-close').click(function(){
         $('#youtube-container').slideUp('fast', function(){
@@ -169,6 +176,10 @@ function youtube(resp){
     if (! youtubeReady){
         alert('WAIT IT OUT BRO. Youtube isn\'t ready yet! Or reload if its been a minute.');
         return;
+    }
+    else {
+        console.log('going to add to playlist');
+        addToPlaylist(resp);
     }
 }
 function addToPlaylist(track){
@@ -404,9 +415,9 @@ function trackClick(){
                 if (resp.status === 'error'){
                     alert('Sorry! Couldn\'t find that track on Youtube.');
                 }
-                //else{
-                //    youtube(resp);
-                //}
+                else{
+                   youtube(resp);
+                }
             }
         })
     }

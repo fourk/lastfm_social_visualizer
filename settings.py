@@ -6,14 +6,14 @@ djcelery.setup_loader()
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
-def deprint(s):
+def debug_print(s):
     if DEBUG:
         print s
 API = 'a9785e0b1bb8deb9eb4e090b3aba9613'
-HOME = '/Users/jamesburkhart/work/fourk'
+HOME = '/Users/jamesburkhart/work/lastfm_social_visualizer'
 
 ADMINS = (
-    ('James Burkhart', 'jburkhart@gm.slc.edu'),
+    ('James Burkhart', 'james@jamesburkhart.com'),
 )
 
 MANAGERS = ADMINS
@@ -84,9 +84,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
 )
 
-PID_DIRECTORY = os.path.join(HOME,'pids')
-
-ROOT_URLCONF = 'fourk.urls'
+ROOT_URLCONF = 'lastfm_social_visualizer.urls'
 
 TEMPLATE_DIRS = (
     os.path.join(HOME, 'templates').replace('\\','/'),
@@ -104,7 +102,7 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'lfm',
     'south',
-    'django_beanstalkd',
+    # 'django_beanstalkd',
     'djcelery',
 )
 
@@ -120,30 +118,28 @@ CACHES = {
 #CELERY STUFF
 CELERY_RESULT_BACKEND = 'amqp'
 BROKER_HOST = 'localhost'
-#BROKER_HOST = 'ec2-50-18-18-186.us-west-1.compute.amazonaws.com'
 BROKER_PORT = 5672
 BROKER_USER = 'guest'
-#BROKER_PASSWORD = 'n0td3f4ult'
 BROKER_PASSWORD = 'guest'
 BROKER_VHOST = '/'
 
 try:
 # settings_mine overrides all other settings.
-	from django_settings_mine import *
-	deprint('Loaded local settings in django_settings_mine.py')
+    from django_settings_mine import *
+    debug_print('Loaded local settings in django_settings_mine.py')
 
 except ImportError:
-	pass
+    pass
 
 except Exception, e:
-	deprint('Error importing settings_mine.py: %s' % e)
-	
+    debug_print('Error importing settings_mine.py: %s' % e)
+    
 if locals().get('DJANGO_EXTENSIONS'):
-	INSTALLED_APPS=INSTALLED_APPS+('django_extensions',)
-	
+    INSTALLED_APPS=INSTALLED_APPS+('django_extensions',)
+    
 if locals().get('DEBUG_TOOLBAR'):
-	INSTALLED_APPS=INSTALLED_APPS+('debug_toolbar',)
-	MIDDLEWARE_CLASSES=MIDDLEWARE_CLASSES+('debug_toolbar.middleware.DebugToolbarMiddleware',)
-	
+    INSTALLED_APPS=INSTALLED_APPS+('debug_toolbar',)
+    MIDDLEWARE_CLASSES=MIDDLEWARE_CLASSES+('debug_toolbar.middleware.DebugToolbarMiddleware',)
+    
 import sys
-sys.path.append('/Users/jamesburkhart/work/fourk')
+sys.path.append(HOME)

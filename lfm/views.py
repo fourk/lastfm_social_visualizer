@@ -3,9 +3,10 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.core.cache import cache
+from django.conf import settings
 import operator
 from lfm.models import UserProfile, Track, Playlist
-from django_beanstalkd import BeanstalkClient
+# from django_beanstalkd import BeanstalkClient
 import urllib
 from celery.execute import send_task
 
@@ -19,7 +20,7 @@ try:
 except ImportError:
 	import simplejson as json
 
-CLIENT = BeanstalkClient()	
+# CLIENT = BeanstalkClient()	
 SERVICE = gdata.youtube.service.YouTubeService()
 
 
@@ -31,6 +32,7 @@ def init_service():
 #17 color support.
 COLORS = ['DC143C', 'FFB6C1', '8B5F65', 'EE799F', '9F79EE', '483D8B', '0000FF', '3D59AB', '6CA6CD', '00C78C', '2E8B57', '98FB98', '698B22', 'BDB76B', 'EE9A00', 'EEC591', '6E6E6E'] #these are arranged in the order i found them on http://cloford.com/resources/colours/500col.htm
 COLORS = ['#66ff66', '#00C78C', '#333399', '#cccc33', '#ff6666', '#EE9A00', '#0000FF', '#483D8B', '#DC143C', '#698B22', '#66ccff', '#8B5F65', '#6E6E6E', '#EEC591', '#9F79EE', '#009933', '#3399cc']
+
 def node_fwd(request):
     resp = urllib.urlopen('http://127.0.0.1:8124')
     retval = resp.read()
@@ -137,12 +139,13 @@ def playlist_list(request):
     
 def youtube(request, id):
     try:
-        # from ipdb import set_trace;set_trace()
         
         track = Track.objects.select_related('image', 'artist').filter(id=id)[0]
         video_id = get_video_id(track)
-        connection = pika.AsyncoreConnection(pika.ConnectionParameters(host='ec2-50-18-18-186.us-west-1.compute.amazonaws.com',
-                        credentials=pika.PlainCredentials('guest', 'n0td3f4ult')))
+        connection = pika.AsyncoreConnection(\
+                pika.ConnectionParameters(host=settings.BROKER_HOST,
+                        credentials=pika.PlainCredentials(settings.BROKER_USER,
+                            settings.BROKER_PASSWORD)))
         channel = connection.channel()
         channel.queue_declare(queue='testq2', auto_delete=True, durable=False, exclusive=False)
         track_data = json.dumps({'status':'ok', 'videoId': video_id, 'image': get_image(track), 'displayStr': track.name + ' - '+track.artist.name, 'id':track.id})
@@ -159,16 +162,17 @@ def youtube(request, id):
         return HttpResponse(json.dumps({'status':'error'}))
     
 def get_top100(request):
+    colors = COLORS[:]
+    print 'getting top 100'
     retval = None
-
     username = request.GET.get('username')
     try:
         user = UserProfile.objects.get(lfm_username=username)
     except ObjectDoesNotExist:
         user = UserProfile(lfm_username=username)
-        user.updating_track_week = True
+        user.visited = True
         user.save()
-        return HttpResponse('sorry, loading, come back in 5m')
+        return HttpResponse(json.dumps({'msg':'sorry, loading, come back in 5m'}))
         # send_task()
     # if user.updating_track_week:
     #     retval = json.dumps({'status':'wait'})
@@ -191,7 +195,7 @@ def get_top100(request):
         user_list = []
         user_hash = {}
         for user in listeners:
-            user_hash[user.lfm_username] = COLORS.pop()
+            user_hash[user.lfm_username] = colors.pop()
             user_list.append(user.lfm_username)
 
         for artist_dict in resp:
